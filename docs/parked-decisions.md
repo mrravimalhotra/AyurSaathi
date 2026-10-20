@@ -27,7 +27,7 @@ This register has two parts:
 | PK-12 | **Resolved (owner):** patient sees the current course; history on request | n/a | Current course, history on request | Patient plan tab | Ravi, doctor | Decide with the doctor |
 | PK-13 | Documents as its own tab in the record | Own tab / inside each phase | Own tab | Record layout | Ravi | Confirm in mockup review |
 | PK-14 | Daily check-in questions and length | Five questions / fewer / different | Five questions as in mockups | Care check-in design | Ravi, doctor | Review after the pilot |
-| PK-15 | Patient can request an extra consultation in the app | Yes with clinic approval / replies only | Reply to clinic prompts only | Continuity | Ravi | Decide with the doctor's workload in mind |
+| PK-15 | **Resolved (owner):** patient can request an extra consultation in the app; clinic approves and schedules. Request flow details PROPOSED | n/a | Request plus clinic approval | Continuity | Ravi | Decide with the doctor's workload in mind |
 | PK-16 | **Resolved (owner) for v1:** return-visit nudge is off; revisit after the pilot | n/a | Off | Continuity | Ravi | Decide with the clinic |
 | PK-17 | **Resolved (owner) for v1:** no attendant access; attendant details are stored on the patient record only | n/a | None | Roles, privacy | Ravi, lawyer | Decide with consent design |
 | PK-18 | Data retention and erasure periods; retention of passport scans; the rule for when real patient data may be stored | Periods per data class | No real patient data until the legal gate is passed | Privacy, go-live | Ravi, lawyer | Legal advice before the pilot |

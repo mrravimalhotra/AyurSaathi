@@ -235,7 +235,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 | FR-CON-08 | Return-visit nudge to the coordinator after a set period | Staff | PROPOSED; timing PARKED (PK-16) | Could |
 | FR-CON-09 | End-of-programme feedback form | Patient | PROPOSED | Could |
 | FR-CON-10 | Departure documents handover (prescription, diet guidance, treatment summary) | Staff | PROPOSED | Should |
-| FR-CON-11 | Patient can request an extra consultation in the app | Patient | PARKED (PK-15). Default: reply to clinic prompts only | Could |
+| FR-CON-11 | Patient can request an extra consultation in the app | Patient | DECIDED (PK-15): patient requests, clinic approves. Flow details PROPOSED | Should |
 | FR-CON-12 | Trend view of check-in scores for the doctor | Doctor | PROPOSED | Could |
 
 ## 9. Business rules
