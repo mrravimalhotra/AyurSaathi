@@ -101,7 +101,7 @@ Build one installable web application, used by clinic staff (coordinator, doctor
 | ADR-14 | Environments: local, preview (per pull request), staging, production. Database changes only through versioned migration files | Safe change; repeatable | PROPOSED |
 | ADR-15 | No personal health data in application logs, error reports or analytics | Privacy | PROPOSED |
 | ADR-20 | Clinic-agnostic, multi-tenant-ready design. A `clinics` table (name, slug, branding, locale, time zone, terminology and phase labels, feature flags, templates) holds everything specific to Ayurvedgram. Every clinic-owned table has `clinic_id`; profiles belong to a clinic; RLS helpers check clinic membership before role. Storage paths start with `clinic_id`. Only one clinic is live in v1; no clinic-switching UI, billing or self-service clinic signup | Owner decision: Ayurvedgram first, others later | DECIDED (agnostic); schema details PROPOSED |
-| ADR-16 | Region of the Supabase project (and Vercel functions) | Residency, latency to patients and staff | PARKED (PK-05) |
+| ADR-16 | Region of the Supabase project (and Vercel functions): India (Mumbai preferred) | Residency, closeness to clinic staff | DECIDED (India); availability and latency to verify in spike S-3, legal confirmation before real data |
 | ADR-17 | Upload scanning for malware | Passports and records come from outside | PARKED (PK-27) |
 | ADR-18 | Field-level protection of especially sensitive columns (for example passport number) beyond at-rest encryption and RLS | Defence in depth | PARKED (PK-28) |
 | ADR-19 | Data retention and deletion jobs | Law and policy | PARKED (PK-18) |
