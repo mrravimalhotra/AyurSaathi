@@ -20,7 +20,7 @@ This register has two parts:
 | PK-05 | Hosting region of database and functions | India / EU / other | None | Setup, residency, latency | Ravi, lawyer | Decide after legal advice; check region list (spike S-3) |
 | PK-06 | **Resolved (owner):** staff record payments received (deposit, balance); no online payments in v1 | n/a | Record only | Planning scope, compliance | Ravi | Keep record-only for v1 |
 | PK-07 | **Resolved (owner):** English only in v1; text stays in resource files so languages can be added later | n/a | English only | Content, translation cost | Ravi | Look at the countries of recent patients |
-| PK-08 | Sending WhatsApp messages from the app | Manual logging / WhatsApp Business API | Manual logging plus email and in-app prompts | Notifications, cost | Ravi | Revisit after the pilot with real usage and costs |
+| PK-08 | **Resolved (owner) for v1:** no WhatsApp sending; manual logging plus email and in-app prompts. Revisit after the pilot | n/a | Manual logging plus email and in-app prompts | Notifications, cost | Ravi | Revisit after the pilot with real usage and costs |
 | PK-09 | What counts as a flag in check-ins | Rules set by the doctor | None. The app applies only the doctor's rules | Care review queue | Doctor | Doctor session with sample check-ins |
 | PK-10 | Ayurveda-specific structured fields (for example prakriti, pulse findings, Panchakarma protocols) and which doctor defines them | Named doctor | Free text only | Assessment and Care forms | Doctor | One working session |
 | PK-11 | Follow-up schedule templates the doctor uses | Weekly then monthly / fortnightly / custom | None | Departure planner | Doctor | Collect real examples from past patients |
