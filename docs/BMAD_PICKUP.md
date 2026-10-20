@@ -54,7 +54,7 @@ BMAD versions and default file locations differ between releases. Check the inst
 ## 5. Before the first agent runs: owner checklist
 
 Minimum answers that unblock planning (the rest can proceed on defaults):
-- [ ] PK-01 Which clinic, and who is the sponsor?
+- [x] PK-01 Clinic is Ayurvedgram, Pune; design clinic-agnostic. [ ] Still open: name the sponsor.
 - [ ] PK-02 Who enters data daily and on what device?
 - [ ] PK-04 Consent: who approves the wording, and when it is captured (can stay parked for planning, must be resolved before real data).
 - [ ] PK-05 Hosting region (can stay parked; spike S-3 first).

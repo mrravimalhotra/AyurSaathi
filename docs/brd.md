@@ -31,7 +31,7 @@ The product is one web application, installable to the phone home screen, with r
 
 ### 2.1 Context
 - The customer is the clinic, not the patient. First deployment is one specific clinic. `[DECIDED]`
-- Related work: a World Ayurveda Congress presentation, "Technology-enabled Ayurveda Medical Tourism", describes the journey stages and lists a patient app/portal and a longitudinal digital record as proposed next steps. It reports more than 510 patients from 13 countries and about nine years of operations at Ayurvedgram, Pune. Whether this app is for Ayurvedgram is not yet confirmed (PK-01).
+- Related work: a World Ayurveda Congress presentation, "Technology-enabled Ayurveda Medical Tourism", describes the journey stages and lists a patient app/portal and a longitudinal digital record as proposed next steps. It reports more than 510 patients from 13 countries and about nine years of operations at Ayurvedgram, Pune. The first deployment is for Ayurvedgram, Pune `[DECIDED]`. The product must stay clinic-agnostic so other clinics can be added later `[DECIDED]` (see BR-11, CN-6). Sponsor identity is still open (PK-01).
 - Visa context: foreign patients typically travel on an Ayush (AY) visa which needs a supporting letter from an accredited Ayush institution; attendants use AY-2, up to two at a time (source: Indian consulate page, see research notes).
 
 ### 2.2 Problem statement `[DECIDED]`
@@ -67,7 +67,7 @@ Public medical-tourism platforms are marketplace-style and Ayurveda clinic softw
 
 ### 4.2 Out of scope for the first release `[PROPOSED]`
 - Native iOS and Android apps. (`[DECIDED]` web first; native later only if needed.)
-- Multi-clinic or marketplace features, commissions.
+- Operating more than one clinic in production, onboarding other clinics, marketplace features, commissions. (The design must be ready for it; see BR-11.)
 - Online payments (see PK-06).
 - Sending WhatsApp from inside the app (see PK-08).
 - Integration with national health-record systems such as ABDM / Ayush Grid (not researched; PK-21).
@@ -81,7 +81,7 @@ Items awaiting a decision are in section 17 and `parked-decisions.md`.
 | Stakeholder | Role | Interest |
 |---|---|---|
 | Ravi | Product owner | Outcome, scope, decisions |
-| Clinic owner / management | Sponsor (identity not confirmed, PK-01) | Efficiency, patient experience, repeat business |
+| Clinic owner / management | Sponsor at Ayurvedgram, Pune (person not confirmed, PK-01) | Efficiency, patient experience, repeat business |
 | Doctor(s) | Clinical lead (named doctor not confirmed, PK-10) | Assessment records, daily review, follow-up |
 | Front desk / coordinator | Daily operator | Fast data entry, travel and logistics |
 | Therapists and kitchen | Delivery of care | Daily schedule (login or not: PK-03) |
@@ -251,6 +251,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 | BR-07 | Every view and change of patient data is logged | PROPOSED |
 | BR-08 | Mockups, prototypes and test environments use invented patient data only | PROPOSED (applied so far in all mockups) |
 | BR-09 | Real patient data may enter the system only after legal review of consent, GDPR and DPDP | PROPOSED go-live gate (PK-18) |
+| BR-11 | The product is clinic-agnostic. Nothing specific to Ayurvedgram (name, branding, terminology, phase names, templates, staff, locale defaults) is hard-coded; it is clinic configuration. Ayurvedgram is the first clinic (tenant) | DECIDED |
 | BR-10 | A patient's name or story is shown publicly (for example in a presentation) only with that patient's consent | PROPOSED |
 
 ## 10. Data requirements
@@ -313,6 +314,7 @@ These are first-pass findings from public pages (see `01_research.md`) and are *
 | CN-2 | Stack: Next.js, Vercel, Supabase, as used on the owner's Invento app (owner decision) |
 | CN-3 | Development is cloud driven (owner decision) |
 | CN-4 | Built with Claude Code and the BMAD method (owner decision) |
+| CN-6 | Multi-tenant ready from day one: every clinic-owned record carries a clinic key and access is isolated per clinic. Only one clinic is live in v1 (owner decision) |
 | CN-5 | No building until the owner gives the go signal. The owner has said the build will be done in Claude Code with BMAD; the go date and first sprint scope are PARKED (PK-20) |
 
 ### Dependencies
@@ -394,7 +396,7 @@ The full register with defaults, blockers and recommended resolution is in `park
 
 | Owner decision (master file A3) | Requirements |
 |---|---|
-| 1 Clinic is the customer; one clinic first | Sections 2, 4 |
+| 1 Clinic is the customer; one clinic first (Ayurvedgram), agnostic design for others | Sections 2, 4; BR-11, CN-6 |
 | 3 One app, role-based | FR-ACC-01, 02 |
 | 4 Web, home screen | FR-ACC-07, CN-1 |
 | 5 Next.js, Vercel, Supabase | CN-2 |

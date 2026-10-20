@@ -100,6 +100,7 @@ Build one installable web application, used by clinic staff (coordinator, doctor
 | ADR-13 | UI text lives in resource files from day one (English only first) | Languages undecided but likely | PROPOSED; languages PARKED (PK-07) |
 | ADR-14 | Environments: local, preview (per pull request), staging, production. Database changes only through versioned migration files | Safe change; repeatable | PROPOSED |
 | ADR-15 | No personal health data in application logs, error reports or analytics | Privacy | PROPOSED |
+| ADR-20 | Clinic-agnostic, multi-tenant-ready design. A `clinics` table (name, slug, branding, locale, time zone, terminology and phase labels, feature flags, templates) holds everything specific to Ayurvedgram. Every clinic-owned table has `clinic_id`; profiles belong to a clinic; RLS helpers check clinic membership before role. Storage paths start with `clinic_id`. Only one clinic is live in v1; no clinic-switching UI, billing or self-service clinic signup | Owner decision: Ayurvedgram first, others later | DECIDED (agnostic); schema details PROPOSED |
 | ADR-16 | Region of the Supabase project (and Vercel functions) | Residency, latency to patients and staff | PARKED (PK-05) |
 | ADR-17 | Upload scanning for malware | Passports and records come from outside | PARKED (PK-27) |
 | ADR-18 | Field-level protection of especially sensitive columns (for example passport number) beyond at-rest encryption and RLS | Defence in depth | PARKED (PK-28) |
@@ -114,7 +115,7 @@ Build one installable web application, used by clinic staff (coordinator, doctor
 | Performance | Server-rendered pages; indexes on patient, episode and date columns; paginate lists; avoid large file transfers through the app server (direct signed upload to storage) |
 | Reliability | Idempotent jobs; retries with back-off for email; migrations tested on preview databases |
 | Maintainability | One repo; typed shared validation; domain modules per phase; automated tests; generated database types |
-| Evolvability | Domain model uses `episodes`, `clinics` can be added later as a tenant key (not in v1) |
+| Evolvability | Multi-tenant ready from day one (ADR-20): `clinic_id` on every clinic-owned table, tenant isolation in RLS, clinic-specific content in configuration |
 | Operability | Health checks; error tracking; dashboards for job failures; documented runbook |
 
 ## 6. Data architecture `[PROPOSED]`
@@ -150,7 +151,8 @@ erDiagram
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `profiles` | id (= auth user id), role (`patient`, `staff`, `doctor`, `admin`), full_name, email, phone, locale, timezone, disabled_at | One row per login |
+| `clinics` | name, slug, branding (jsonb), default_locale, default_timezone, terminology (jsonb), settings (jsonb) | Ayurvedgram is the first row; see ADR-20 |
+| `profiles` | id (= auth user id), clinic_id, role (`patient`, `staff`, `doctor`, `admin`), full_name, email, phone, locale, timezone, disabled_at | One row per login |
 | `patients` | profile_id (nullable until invited), nationality (ISO country), date_of_birth, passport_number, emergency_contact (name, phone), photo_path, dietary_preferences, preferred_language, archived_at | Permanent record |
 | `attendants` | patient_id, episode_id, name, relation, passport_number | Up to two per episode (business rule) |
 | `episodes` | patient_id, phase (`enquiry`, `assessment`, `planning`, `arrival`, `care`, `continuity`), started_on, closed_on, primary_doctor_id, source | One per visit |
@@ -202,11 +204,11 @@ Indexes: `(patient_id)`, `(episode_id)`, `(episode_id, plan_date)`, `(scheduled_
 | Consents | read/give own | read | read | read/write |
 | Audit log | none | none | none | read only |
 
-Rules: a patient row is reachable only through `patients.profile_id = auth.uid()`; helper functions resolve role and patient ownership. Staff access to patients is not limited per doctor in v1 (parked if needed). Updates and deletes on `audit_log` are denied for all roles. Views expose patient-safe columns only.
+Rules: a patient row is reachable only through `patients.profile_id = auth.uid()`; helper functions resolve role and patient ownership. Every policy also requires the row's `clinic_id` to match the caller's clinic (ADR-20); a cross-clinic access test is required for every table. Staff access to patients is not limited per doctor in v1 (parked if needed). Updates and deletes on `audit_log` are denied for all roles. Views expose patient-safe columns only.
 
 ### 6.4 Storage layout
 - Private buckets: `patient-documents` (passports, medical records), `clinic-letters` (supporting letters, prescriptions, summaries), `profile-photos`.
-- Path pattern: `{patient_id}/{episode_id or 'general'}/{document_id}.{ext}`.
+- Path pattern: `{clinic_id}/{patient_id}/{episode_id or 'general'}/{document_id}.{ext}`.
 - Uploads go directly to storage with a short-lived signed upload URL; the document row is created after the upload succeeds.
 - Download via signed URLs that expire in minutes. Storage access rules mirror the documents table.
 - Limits (types, size) proposed in section 8.4 and parked for confirmation.
