@@ -180,6 +180,8 @@ erDiagram
 | `documents` | patient_id, episode_id (nullable), kind (`passport`, `medical_record`, `letter`, `prescription`, `summary`, `other`), storage_path, mime_type, size_bytes, uploaded_by, visibility, deleted_at | Metadata; file is in Storage |
 | `consent_versions` | text, language, effective_from | Wording PARKED (PK-04) |
 | `consents` | patient_id, consent_version_id, scope (jsonb), given_at, given_via, withdrawn_at | Versioned, revocable |
+| `payments` | episode_id, kind (`deposit`, `balance`, `other`), amount_minor, currency, received_on, method, recorded_by, note | Record only; no card data (PK-06) |
+| `consultation_requests` | episode_id, requested_at, preferred_window, reason, status (`requested`, `approved`, `declined`, `done`), handled_by, consultation_id | Patient requests, clinic approves (PK-15) |
 | `messages` | episode_id, sender_id, body, attachment_document_id, read_at | Optional (FR-ACC-12) |
 | `notifications` | recipient_id, channel (`in_app`, `email`), template, payload (jsonb), scheduled_for, sent_at, status, error | Outbox pattern |
 | `audit_log` | at, actor_id, actor_role, action, table_name, record_id, patient_id, metadata (jsonb) | Append-only |
@@ -202,6 +204,8 @@ Indexes: `(patient_id)`, `(episode_id)`, `(episode_id, plan_date)`, `(scheduled_
 | Check-ins | read/write own answers | read | read/write (review) | read |
 | Documents | read own where visible; upload own | read/write | read/write | read/write |
 | Consents | read/give own | read | read | read/write |
+| Payments | read own | read/write | read | read/write |
+| Consultation requests | create/read own | read/write | read/write | read/write |
 | Audit log | none | none | none | read only |
 
 Rules: a patient row is reachable only through `patients.profile_id = auth.uid()`; helper functions resolve role and patient ownership. Every policy also requires the row's `clinic_id` to match the caller's clinic (ADR-20); a cross-clinic access test is required for every table. Staff access to patients is not limited per doctor in v1 (parked if needed). Updates and deletes on `audit_log` are denied for all roles. Views expose patient-safe columns only.
@@ -421,6 +425,8 @@ Detailed epics are in BRD section 15.
 ## 12. Parked architecture items
 
 PK-05 region; PK-08 WhatsApp sending; PK-18 retention and deletion; PK-22 email provider; PK-23 web push; PK-24 availability and backup targets; PK-25 error tracking and monitoring tools; PK-26 patient sign-in method; PK-27 upload malware scanning; PK-28 field-level protection of sensitive columns; PK-29 scheduler mechanism. Full register: `parked-decisions.md`.
+
+Architect review: see `architecture-review.md`.
 
 ## 13. Risks specific to the architecture
 
