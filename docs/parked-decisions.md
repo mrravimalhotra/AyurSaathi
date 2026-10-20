@@ -25,7 +25,7 @@ This register has two parts:
 | PK-10 | Ayurveda-specific structured fields (for example prakriti, pulse findings, Panchakarma protocols) and which doctor defines them | Named doctor | Free text only | Assessment and Care forms | Doctor | One working session |
 | PK-11 | Follow-up schedule templates the doctor uses | Weekly then monthly / fortnightly / custom | None | Departure planner | Doctor | Collect real examples from past patients |
 | PK-12 | **Resolved (owner):** patient sees the current course; history on request | n/a | Current course, history on request | Patient plan tab | Ravi, doctor | Decide with the doctor |
-| PK-13 | Documents as its own tab in the record | Own tab / inside each phase | Own tab | Record layout | Ravi | Confirm in mockup review |
+| PK-13 | **Resolved (owner):** Documents is its own tab in the record | n/a | Own tab | Record layout | Ravi | Confirm in mockup review |
 | PK-14 | Daily check-in questions and length | Five questions / fewer / different | Five questions as in mockups | Care check-in design | Ravi, doctor | Review after the pilot |
 | PK-15 | **Resolved (owner):** patient can request an extra consultation in the app; clinic approves and schedules. Request flow details PROPOSED | n/a | Request plus clinic approval | Continuity | Ravi | Decide with the doctor's workload in mind |
 | PK-16 | **Resolved (owner) for v1:** return-visit nudge is off; revisit after the pilot | n/a | Off | Continuity | Ravi | Decide with the clinic |
