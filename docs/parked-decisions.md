@@ -13,7 +13,7 @@ This register has two parts:
 
 | ID | Parked item | Options | Working default (only if a design needs one) | Blocks | Needs from | Recommended way to resolve |
 |---|---|---|---|---|---|---|
-| PK-01 | **Partly resolved:** first clinic is Ayurvedgram, Pune, and the product stays clinic-agnostic (BR-11, ADR-20). Still open: who is the sponsor, and confirmation of Ayurvedgram's real terminology and stages | Name | None | Real terminology, stages, doctor access | Ravi | One-line confirmation |
+| PK-01 | **Partly resolved:** first clinic is Ayurvedgram, Pune, and the product stays clinic-agnostic (BR-11, ADR-20). Sponsor: owner chose "not decided yet"; Ravi is the sole decision-maker until named. Still open:  confirmation of Ayurvedgram's real terminology and stages | Name | None | Real terminology, stages, doctor access | Ravi | One-line confirmation |
 | PK-02 | **Resolved (owner):** coordinator and doctor each use either phone or laptop, so both device classes are first-class for both roles (BR-12). Still unknown: which device dominates per task, to be seen when shadowing | Phone / laptop per user | Responsive, full-function on both | Form length, bulk entry | Ravi, clinic | Shadow the coordinator for a day |
 | PK-03 | Therapist and kitchen logins in v1 | Yes / coordinator enters for them | Coordinator enters | Roles, scope | Ravi, clinic | Ask the clinic how daily plans reach therapists today |
 | PK-04 | Consent: timing, wording, who approves legally | At onboarding / at plan confirmation; text per language | Capture at onboarding as a second step, versioned and timestamped | Onboarding step 2, privacy, go-live | Ravi, lawyer | Lawyer reviews wording for DPDP and GDPR |
@@ -32,7 +32,7 @@ This register has two parts:
 | PK-17 | Attendant (companion) access | View-only logistics if the patient grants it / none | None | Roles, privacy | Ravi, lawyer | Decide with consent design |
 | PK-18 | Data retention and erasure periods; retention of passport scans; the rule for when real patient data may be stored | Periods per data class | No real patient data until the legal gate is passed | Privacy, go-live | Ravi, lawyer | Legal advice before the pilot |
 | PK-19 | Success-measure targets (BRD section 3) | Numbers per measure | None | Reporting | Ravi | Set after a baseline |
-| PK-20 | Go signal, build order, first sprint scope, team and dates | Foundation first then Arrival and Care (suggested) | None. Do not build before the go signal | Everything | Ravi | Review the PRD and epics, then give the go |
+| PK-20 | **Partly resolved (owner):** build order is Foundation, then Arrival and Care. Still open: go signal, first sprint scope, team and dates | Dates and team | None. Do not build before the go signal | Everything | Ravi | Review the PRD and epics, then give the go |
 | PK-21 | National health-record alignment (ABDM, Ayush Grid) and other health-record or telemedicine rules in India | Align / not in v1 | Not in v1; do not promise alignment | Roadmap, compliance | Ravi, advisor | Research and advice |
 | PK-22 | Email provider and sending domain | Several providers | None | Invites, reminders | Ravi | Choose a provider with a verified domain; spike S-4 |
 | PK-23 | Web push notifications, including on iPhone installed web apps | Use / not in v1 | Not in v1 | Notifications | Ravi | Spike S-1 |
