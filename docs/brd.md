@@ -124,7 +124,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 |---|---|---|---|---|
 | FR-ACC-01 | One application with role-based logins for clinic staff and patients, sharing one backend and patient record | All | DECIDED | Must |
 | FR-ACC-02 | Roles: patient, clinic staff (front desk/coordinator), doctor, admin | All | DECIDED for clinic vs patient; staff split PROPOSED | Must |
-| FR-ACC-03 | Therapist and kitchen roles | Therapist, kitchen | PARKED (PK-03). Default if needed: coordinator enters on their behalf | Could |
+| FR-ACC-03 | Therapist and kitchen roles | Therapist, kitchen | Not in v1 (PK-03 resolved): coordinator enters on their behalf | Won't (v1) |
 | FR-ACC-04 | Attendant (companion) view-only access to logistics if the patient grants it | Attendant | PARKED (PK-17) | Could |
 | FR-ACC-05 | A patient can see only their own record; staff see by role | All | PROPOSED | Must |
 | FR-ACC-06 | Audit log of every view and change of patient data (who, what, when, record) | System | PROPOSED | Must |
