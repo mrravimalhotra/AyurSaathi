@@ -152,7 +152,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 | FR-ONB-05 | Additional optional fields: preferred language, time zone, dietary preferences, attendant details | Staff | PROPOSED | Should |
 | FR-ONB-06 | Save a draft and resume later | Staff | PROPOSED | Should |
 | FR-ONB-07 | Send the patient an invite link (email); patient sets access without installing anything first | System | PROPOSED | Must |
-| FR-ONB-08 | Capture consent during onboarding (step 2 of the flow) | Patient/staff | PARKED (PK-04: timing and wording) | Must |
+| FR-ONB-08 | Capture consent during onboarding (step 2 of the flow) | Patient/staff | Timing DECIDED (PK-04); wording PARKED pending legal review | Must |
 | FR-ONB-09 | Warn on possible duplicates (same email, phone or passport number) | System | PROPOSED | Should |
 | FR-ONB-10 | Link earlier enquiry notes or quotation already sent over WhatsApp or email | Staff | PROPOSED | Should |
 
