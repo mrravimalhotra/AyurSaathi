@@ -25,7 +25,7 @@ Build one installable web application, used by clinic staff (coordinator, doctor
 ### Architecture drivers (ranked)
 1. **Privacy and access control of health data** (patients see only their own data; staff by role; everything audited).
 2. **Low friction for non-technical patients** (open from a link on a phone; no app store).
-3. **Fast, short data entry for staff** (phone first).
+3. **Fast, short data entry for staff** (works equally well on phone and laptop, BR-12).
 4. **Small team, small scale, low operating cost** (one clinic, hundreds to low thousands of patients).
 5. **Ability to grow** to more clinics or native apps later without a rewrite.
 
@@ -250,7 +250,7 @@ Rules: a patient row is reachable only through `patients.profile_id = auth.uid()
 
 ### 7.4 UI and design system
 - Tokens come from the owner-reviewed mockups: deep green accent `#2E5E4E`, green-tinted neutrals, phase chip colours (Enquiry grey, Assessment blue, Planning gold, Arrival terracotta, Care leaf green, Continuity teal), headings in Literata and body in Public Sans, light and dark themes. See `04_mockups.html`.
-- Patient screens are phone width with a four-item bottom bar (Home, Plan, Documents, Messages). Clinic screens are desktop-first and usable on a phone.
+- Patient screens are phone width with a four-item bottom bar (Home, Plan, Documents, Messages). Clinic screens are responsive and fully functional on both phone and laptop for coordinator and doctor (BR-12): no feature may exist on one device class only, and layouts adapt (single column and large touch targets on phone; list-plus-detail and keyboard shortcuts on laptop).
 - Status in form as well as colour (chips with text, not colour alone).
 
 ## 8. Quality design

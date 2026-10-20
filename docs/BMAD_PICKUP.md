@@ -55,7 +55,7 @@ BMAD versions and default file locations differ between releases. Check the inst
 
 Minimum answers that unblock planning (the rest can proceed on defaults):
 - [x] PK-01 Clinic is Ayurvedgram, Pune; design clinic-agnostic. [ ] Still open: name the sponsor.
-- [ ] PK-02 Who enters data daily and on what device?
+- [x] PK-02 Coordinator and doctor use either phone or laptop (BR-12).
 - [ ] PK-04 Consent: who approves the wording, and when it is captured (can stay parked for planning, must be resolved before real data).
 - [ ] PK-05 Hosting region (can stay parked; spike S-3 first).
 - [ ] PK-20 The go signal and first sprint scope.

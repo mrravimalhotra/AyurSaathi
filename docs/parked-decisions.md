@@ -14,7 +14,7 @@ This register has two parts:
 | ID | Parked item | Options | Working default (only if a design needs one) | Blocks | Needs from | Recommended way to resolve |
 |---|---|---|---|---|---|---|
 | PK-01 | **Partly resolved:** first clinic is Ayurvedgram, Pune, and the product stays clinic-agnostic (BR-11, ADR-20). Still open: who is the sponsor, and confirmation of Ayurvedgram's real terminology and stages | Name | None | Real terminology, stages, doctor access | Ravi | One-line confirmation |
-| PK-02 | Who enters data daily and on which device | Coordinator on phone / desktop / both | Coordinator on phone; doctor on desktop | Form length, bulk entry | Ravi, clinic | Shadow the coordinator for a day |
+| PK-02 | **Resolved (owner):** coordinator and doctor each use either phone or laptop, so both device classes are first-class for both roles (BR-12). Still unknown: which device dominates per task, to be seen when shadowing | Phone / laptop per user | Responsive, full-function on both | Form length, bulk entry | Ravi, clinic | Shadow the coordinator for a day |
 | PK-03 | Therapist and kitchen logins in v1 | Yes / coordinator enters for them | Coordinator enters | Roles, scope | Ravi, clinic | Ask the clinic how daily plans reach therapists today |
 | PK-04 | Consent: timing, wording, who approves legally | At onboarding / at plan confirmation; text per language | Capture at onboarding as a second step, versioned and timestamped | Onboarding step 2, privacy, go-live | Ravi, lawyer | Lawyer reviews wording for DPDP and GDPR |
 | PK-05 | Hosting region of database and functions | India / EU / other | None | Setup, residency, latency | Ravi, lawyer | Decide after legal advice; check region list (spike S-3) |

@@ -17,7 +17,7 @@ One installable web app (PWA) with role-based views: a clinic dashboard for staf
 - Journey: Enquiry → Assessment → Planning → Arrival → Care → Continuity → return visit (Assessment or Planning).
 
 ## 3. Users
-Coordinator (daily data entry, phone first), Doctor (reviews check-ins, notes, medicines), Patient (older, non-technical, opens a link on a phone), Admin. Therapist, kitchen and attendant access are parked (PK-03, PK-17).
+Coordinator (daily data entry) and Doctor (reviews check-ins, notes, medicines), both on either phone or laptop (BR-12), Patient (older, non-technical, opens a link on a phone), Admin. Therapist, kitchen and attendant access are parked (PK-03, PK-17).
 
 ## 4. Goals `[PROPOSED]`, targets parked (PK-19)
 BO-1 one source of truth per patient; BO-2 less time finding information; BO-3 fewer lost or repeated WhatsApp messages; BO-4 engagement during care and after departure; BO-5 lineage from first enquiry; BO-6 repeat visits; BO-7 privacy compliance.
@@ -34,7 +34,7 @@ Web first. Dummy data only until legal review of consent, GDPR and DPDP (BR-08, 
 Double-entry fatigue for staff (RK-1), older patients struggling (RK-2), compliance before real data (RK-3), clinical design without a doctor (RK-5), scope growth (RK-8).
 
 ## 8. Questions blocking planning
-Tracked in `parked-decisions.md`: PK-01 (sponsor name; clinic is Ayurvedgram), PK-02 (who enters data, on what device), PK-04 (consent, can stay parked for planning), PK-05 (hosting region, can stay parked), PK-20 (go signal and first sprint scope).
+Tracked in `parked-decisions.md`: PK-01 (sponsor name; clinic is Ayurvedgram), PK-04 (consent, can stay parked for planning), PK-05 (hosting region, can stay parked), PK-20 (go signal and first sprint scope).
 
 ## 9. Next BMAD steps
 PM: write the PRD (decided items in the body, proposed items under "Candidate requirements, unconfirmed"). UX: review `ux/mockups.html` screen by screen with the owner. Architect: review each proposed ADR and run spikes S-1 to S-7. PO: shard and check epics. Build only after the go signal.

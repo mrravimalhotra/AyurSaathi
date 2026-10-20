@@ -252,6 +252,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 | BR-08 | Mockups, prototypes and test environments use invented patient data only | PROPOSED (applied so far in all mockups) |
 | BR-09 | Real patient data may enter the system only after legal review of consent, GDPR and DPDP | PROPOSED go-live gate (PK-18) |
 | BR-11 | The product is clinic-agnostic. Nothing specific to Ayurvedgram (name, branding, terminology, phase names, templates, staff, locale defaults) is hard-coded; it is clinic configuration. Ayurvedgram is the first clinic (tenant) | DECIDED |
+| BR-12 | Coordinator and doctor can do every task on either phone or laptop. Responsive design, no device-specific features, same data on both | DECIDED |
 | BR-10 | A patient's name or story is shown publicly (for example in a presentation) only with that patient's consent | PROPOSED |
 
 ## 10. Data requirements
@@ -271,7 +272,7 @@ Detailed entities and relationships are in `architecture.md` section 6. Business
 
 | ID | Area | Requirement |
 |---|---|---|
-| NFR-01 | Usability | Phone first; large readable text; patient screens usable by a non-technical older user with no training |
+| NFR-01 | Usability | Clinic staff and doctors use phone or laptop interchangeably (BR-12); patient screens phone first; large readable text; patient screens usable by a non-technical older user with no training |
 | NFR-02 | Accessibility | Target WCAG 2.2 AA for patient screens |
 | NFR-03 | Performance | Main screens usable within about 3 seconds on a typical mobile connection; daily check-in submittable in under a minute |
 | NFR-04 | Availability | Business-hours availability matters most; targets and maintenance windows PARKED (PK-24) |
@@ -303,7 +304,7 @@ These are first-pass findings from public pages (see `01_research.md`) and are *
 |---|---|
 | AS-1 | The first clinic is a single site with one to a few doctors and a small operations team |
 | AS-2 | Patients have a smartphone and email; many already use WhatsApp |
-| AS-3 | Staff will enter data on phones and desktops during the working day |
+| AS-3 | Coordinator and doctor use either phone or laptop during the working day (owner, PK-02) |
 | AS-4 | The prototype uses dummy data; production data comes after legal review |
 | AS-5 | English is enough for the first release (PK-07) |
 
