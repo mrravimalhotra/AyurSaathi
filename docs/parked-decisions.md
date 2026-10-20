@@ -38,7 +38,7 @@ This register has two parts:
 | PK-23 | Web push notifications, including on iPhone installed web apps | Use / not in v1 | Not in v1 | Notifications | Ravi | Spike S-1 |
 | PK-24 | Availability, maintenance window, backup RPO and RTO | Numbers | None | Operations | Ravi | Agree with the clinic |
 | PK-25 | Error tracking and monitoring tools | Several | None | Operations | Ravi | Pick when the first environment exists |
-| PK-26 | Patient sign-in method | One-time link or code to email / password / social sign-in | One-time link or code to email | Authentication | Ravi | Test with older, non-technical users |
+| PK-26 | **Resolved (owner):** patients sign in with a one-time link or code sent to their email; no password. Still to verify: delivery reliability (spike S-4) | n/a | One-time link or code to email | Authentication | Ravi | Test with older, non-technical users |
 | PK-27 | Upload scanning for malware; accepted file types, size limit, HEIC support | Scan / no scan; limits | PDF, JPG, PNG up to 15 MB, no scanning | Documents | Ravi | Spike S-5 and legal view |
 | PK-28 | Field-level protection of passport number and similar | Extra column encryption / rely on at-rest encryption and RLS | At-rest encryption and RLS only | Data model | Ravi, advisor | Security review |
 | PK-29 | Scheduler mechanism for prompts and reminders | Vercel cron / database scheduler | Either, behind one interface | Notifications | Ravi | Spike S-2 |

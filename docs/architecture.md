@@ -90,7 +90,7 @@ Build one installable web application, used by clinic staff (coordinator, doctor
 | ADR-03 | Supabase Postgres is the only system of record | Owner decision | DECIDED |
 | ADR-04 | Authorisation is enforced in the database with row-level security (RLS); the UI hides things but never is the only guard | Health data; defence in depth | PROPOSED |
 | ADR-05 | The app talks to the database with the signed-in user's token so RLS applies. The service-role key exists only in server-side jobs and admin tools, never in the browser | Avoid bypassing RLS by accident | PROPOSED |
-| ADR-06 | Staff sign in with email and password plus MFA (authenticator app). Patients sign in with a one-time link or code sent to their email, so they need no password | Non-technical patients; fewer support calls | PROPOSED; patient method PARKED (PK-26) |
+| ADR-06 | Staff sign in with email and password plus MFA (authenticator app). Patients sign in with a one-time link or code sent to their email, so they need no password | Non-technical patients; fewer support calls | Patient method DECIDED (PK-26); staff method PROPOSED |
 | ADR-07 | Files live in private Supabase Storage buckets and are served through short-lived signed URLs; access rules mirror table rules | Passports and medical records | PROPOSED |
 | ADR-08 | Audit: database triggers log changes; the server logs views of patient records. The audit log cannot be edited or deleted by any application role | Compliance and trust | PROPOSED |
 | ADR-09 | Installable PWA: web manifest and a minimal service worker. Offline support limited to the app shell; no patient health data is cached offline | Home-screen requirement without storing health data on the device | Home screen DECIDED; offline scope PROPOSED |
