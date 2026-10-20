@@ -35,7 +35,7 @@ This register has two parts:
 | PK-20 | **Partly resolved (owner):** build order is Foundation, then Arrival and Care. Still open: go signal, first sprint scope, team and dates | Dates and team | None. Do not build before the go signal | Everything | Ravi | Review the PRD and epics, then give the go |
 | PK-21 | National health-record alignment (ABDM, Ayush Grid) and other health-record or telemedicine rules in India | Align / not in v1 | Not in v1; do not promise alignment | Roadmap, compliance | Ravi, advisor | Research and advice |
 | PK-22 | **Partly resolved (owner):** provider is Resend. Still open: sending domain; deliverability to be confirmed in spike S-4 (and a DPA per S-7) | Domain | None | Invites, reminders | Ravi | Choose a provider with a verified domain; spike S-4 |
-| PK-23 | Web push notifications, including on iPhone installed web apps | Use / not in v1 | Not in v1 | Notifications | Ravi | Spike S-1 |
+| PK-23 | **Resolved (owner) for v1:** no web push; email and in-app only. Revisit after spike S-1 and the pilot | n/a | Not in v1 | Notifications | Ravi | Spike S-1 |
 | PK-24 | Availability, maintenance window, backup RPO and RTO | Numbers | None | Operations | Ravi | Agree with the clinic |
 | PK-25 | Error tracking and monitoring tools | Several | None | Operations | Ravi | Pick when the first environment exists |
 | PK-26 | **Resolved (owner):** patients sign in with a one-time link or code sent to their email; no password. Still to verify: delivery reliability (spike S-4) | n/a | One-time link or code to email | Authentication | Ravi | Test with older, non-technical users |
