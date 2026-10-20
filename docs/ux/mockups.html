@@ -1,0 +1,441 @@
+<title>Ayurveda Journey App Mockups</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a review sheet. Intro band, then each screen in its own device frame, clinic screens in desktop frames, patient screens in phone frames. */
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --surface-2:#eaf0ec; --line:#d3ddd7;
+  --fg:#1c2b25; --muted:#5b6d64; --accent:#2e5e4e; --accent-fg:#ffffff;
+  --gold:#b98a1d; --terra:#b8553a; --blue:#3f6e8c; --teal:#2f7f78; --grey:#7c8a83; --leaf:#4e8b6f;
+  --warn-bg:#fbefd0; --warn-fg:#6b4a05; --alert-bg:#f8dfd6; --alert-fg:#7a2d18;
+  --ok-bg:#dcebe2; --ok-fg:#1f4a38;
+  --display:'Literata',Georgia,serif; --body:'Public Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111a16; --surface:#18241f; --surface-2:#203029; --line:#2f4339;
+  --fg:#e4eee9; --muted:#9bb0a6; --accent:#7cc3a3; --accent-fg:#0d1c15;
+  --gold:#e0b84f; --terra:#e58b6f; --blue:#7fb0cf; --teal:#6dc2ba; --grey:#98a79f; --leaf:#86c7a6;
+  --warn-bg:#3a3012; --warn-fg:#f2dc9a; --alert-bg:#43231a; --alert-fg:#f4c3b2;
+  --ok-bg:#1f3a2e; --ok-fg:#bfe4d0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111a16; --surface:#18241f; --surface-2:#203029; --line:#2f4339;
+  --fg:#e4eee9; --muted:#9bb0a6; --accent:#7cc3a3; --accent-fg:#0d1c15;
+  --gold:#e0b84f; --terra:#e58b6f; --blue:#7fb0cf; --teal:#6dc2ba; --grey:#98a79f; --leaf:#86c7a6;
+  --warn-bg:#3a3012; --warn-fg:#f2dc9a; --alert-bg:#43231a; --alert-fg:#f4c3b2;
+  --ok-bg:#1f3a2e; --ok-fg:#bfe4d0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:30px}
+h2{font-size:20px}
+.lead{max-width:68ch;color:var(--muted);margin:8px 0 0}
+.note{background:var(--warn-bg);color:var(--warn-fg);padding:10px 14px;border-radius:6px;max-width:68ch;margin-top:14px}
+.screen{display:flex;flex-direction:column;gap:12px}
+.screen-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.tag{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ask{color:var(--muted);max-width:70ch;margin:0}
+.dev{border:1px solid var(--line);background:var(--surface);border-radius:10px;overflow:hidden;min-width:0}
+.dev-bar{display:flex;gap:6px;align-items:center;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);color:var(--muted);font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+.pane{padding:14px;display:flex;flex-direction:column;gap:12px}
+.phone{width:100%;max-width:340px;border:1px solid var(--line);border-radius:26px;background:var(--surface);overflow:hidden;margin:0}
+.phone .pane{padding:16px}
+.phone-top{background:var(--accent);color:var(--accent-fg);padding:14px 16px}
+.phone-top b{font-family:var(--display);font-size:17px;font-weight:700;display:block}
+.phone-top span{font-size:12px;opacity:.85}
+.tabs{display:flex;justify-content:space-around;border-top:1px solid var(--line);padding:10px 4px;font-size:12px;color:var(--muted)}
+.tabs b{color:var(--accent)}
+.two{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
+@media(min-width:760px){.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.phones{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.search{flex:1 1 160px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;color:var(--muted);background:var(--bg)}
+.btn{display:inline-block;border-radius:6px;padding:7px 12px;font-weight:600;border:1px solid var(--accent);color:var(--accent);background:transparent;font-size:13px}
+.btn.solid{background:var(--accent);color:var(--accent-fg)}
+.btn.block{display:block;text-align:center}
+.alerts{background:var(--alert-bg);color:var(--alert-fg);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.alerts div{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;background:var(--surface)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--grey));display:inline-block}
+.chip.on{background:var(--surface-2)}
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1.2fr);gap:8px;padding:10px 2px;border-top:1px solid var(--line);align-items:center}
+.row:first-child{border-top:0}
+.row small{color:var(--muted);display:block}
+@media(max-width:520px){.row{grid-template-columns:1fr 1fr}.row>:last-child{grid-column:1/-1}}
+.e{--c:var(--grey)}.a{--c:var(--blue)}.p{--c:var(--gold)}.r{--c:var(--terra)}.c{--c:var(--leaf)}.k{--c:var(--teal)}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:12px;color:var(--muted);font-weight:600}
+.input{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--bg);color:var(--muted);min-height:36px}
+.req label::after{content:" *";color:var(--terra)}
+.grp{font-family:var(--display);font-weight:700;font-size:15px;margin-top:4px}
+.fields{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:560px){.fields{grid-template-columns:1fr 1fr}}
+.steps{display:flex;gap:6px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.steps b{color:var(--accent)}
+.rtabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);padding-bottom:0}
+.rtabs span{padding:7px 10px;font-size:13px;color:var(--muted);white-space:nowrap;border-bottom:2px solid transparent}
+.rtabs span.on{color:var(--accent);border-color:var(--accent);font-weight:600}
+.panel{border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
+.panel h3{font-size:14px;font-family:var(--body);font-weight:600}
+.kv{display:flex;justify-content:space-between;gap:10px}
+.kv span:first-child{color:var(--muted)}
+.flag{background:var(--warn-bg);color:var(--warn-fg);border-radius:6px;padding:2px 8px;font-weight:600;font-size:12px;display:inline-block}
+.ok{color:var(--ok-fg);background:var(--ok-bg);border-radius:6px;padding:2px 8px;font-weight:600;font-size:12px;display:inline-block}
+.journey{display:flex;gap:4px;flex-wrap:wrap}
+.journey span{flex:1 1 0;min-width:44px;text-align:center;font-size:10.5px;padding:4px 2px;border-radius:4px;background:var(--surface-2);color:var(--muted)}
+.journey span.done{background:var(--ok-bg);color:var(--ok-fg)}
+.journey span.now{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:5px;background:var(--surface)}
+.card h3{font-size:14px;font-family:var(--body);font-weight:600}
+.scale{display:flex;gap:6px}
+.scale span{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.scale span.pick{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.opt{display:flex;gap:6px;flex-wrap:wrap}
+.opt span{border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.opt span.pick{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.sched{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.sched:first-of-type{border-top:0}
+.check{color:var(--leaf);font-weight:700}
+.bars{display:flex;align-items:flex-end;gap:5px;height:56px}
+.bars span{flex:1;background:var(--leaf);border-radius:3px 3px 0 0;min-width:0}
+.bars span.low{background:var(--gold)}
+.barlab{display:flex;gap:5px;color:var(--muted);font-size:11px}
+.barlab span{flex:1;text-align:center}
+.track{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.track i{display:block;height:100%;background:var(--leaf)}
+.track.low i{background:var(--gold)}
+.tl{display:flex;flex-direction:column;gap:0}
+.tl div{display:grid;grid-template-columns:84px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.tl div:first-child{border-top:0}
+.tl b{color:var(--muted);font-weight:600}
+.foot{color:var(--muted);max-width:70ch}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="tag">Review sheet &middot; draft for Ravi</p>
+    <h1>Ayurveda Journey App: key screens</h1>
+    <p class="lead">Twelve screens from the blueprint, grouped as: first set (patient list, onboarding, record, arrival, daily check-in), then more for Care, then Departure and Continuity. They follow the decisions made so far and mark proposals as questions at the end of each screen.</p>
+    <p class="note">These are pictures, not a working app. Every name, flight and number is invented dummy data.</p>
+  </header>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">C1 &middot; Clinic</span><h2>Patient list</h2></div>
+    <p class="ask">First screen staff see. Anything needing action sits at the top; each patient shows their current phase.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients</div>
+      <div class="pane">
+        <div class="toolbar"><div class="search">Search patients</div><span class="btn solid">+ Onboard patient</span></div>
+        <div class="alerts">
+          <b>Needs attention (3)</b>
+          <div><span>Anna K. flagged poor sleep, day 6</span><b>Open</b></div>
+          <div><span>Marc D. flight changed, pickup to update</span><b>Open</b></div>
+          <div><span>Lena S. check-in overdue by 2 days</span><b>Open</b></div>
+        </div>
+        <div class="chips">
+          <span class="chip on">All</span>
+          <span class="chip e"><i></i>Enquiry</span><span class="chip a"><i></i>Assessment</span><span class="chip p"><i></i>Planning</span>
+          <span class="chip r"><i></i>Arrival</span><span class="chip c"><i></i>Care</span><span class="chip k"><i></i>Continuity</span>
+        </div>
+        <div class="list">
+          <div class="row"><div><b>Anna K.</b><small>Austria</small></div><span class="chip c"><i></i>Care</span><div>Day 6 of 14 &middot; Dr. A</div></div>
+          <div class="row"><div><b>Marc D.</b><small>Germany</small></div><span class="chip r"><i></i>Arrival</span><div>Lands Fri 14:35</div></div>
+          <div class="row"><div><b>Lena S.</b><small>Switzerland</small></div><span class="chip k"><i></i>Continuity</span><div>Week 3 follow-up</div></div>
+          <div class="row"><div><b>John P.</b><small>United Kingdom</small></div><span class="chip p"><i></i>Planning</span><div>Visa pending (AY-1)</div></div>
+          <div class="row"><div><b>Sofia R.</b><small>Spain</small></div><span class="chip a"><i></i>Assessment</span><div>Call booked Monday</div></div>
+          <div class="row"><div><b>Tom H.</b><small>United States</small></div><span class="chip e"><i></i>Enquiry</span><div>Quote sent 3 days ago</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="foot">To confirm: is this the list the coordinator checks first each morning?</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">C2 &middot; Clinic</span><h2>Onboard a new patient</h2></div>
+    <p class="ask">Four required fields create the record. Everything else is captured when available, and does not block onboarding.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients/new</div>
+      <div class="pane">
+        <div class="steps"><b>1 Details</b> &rsaquo; 2 Consent (proposed) &rsaquo; 3 Send invite (proposed)</div>
+        <div class="grp">Required</div>
+        <div class="fields">
+          <div class="field req"><label>Full name</label><div class="input">Anna Keller</div></div>
+          <div class="field req"><label>Email</label><div class="input">anna@example.com</div></div>
+          <div class="field req"><label>Phone</label><div class="input">+43 ••• ••• ••</div></div>
+          <div class="field req"><label>Nationality</label><div class="input">Austria</div></div>
+        </div>
+        <div class="grp">Optional</div>
+        <div class="fields">
+          <div class="field"><label>Photo</label><div class="input">Upload</div></div>
+          <div class="field"><label>Date of birth</label><div class="input">DD / MM / YYYY</div></div>
+          <div class="field"><label>Passport number</label><div class="input">&nbsp;</div></div>
+          <div class="field"><label>Emergency contact</label><div class="input">Name and phone</div></div>
+          <div class="field"><label>Passport scan</label><div class="input">Upload</div></div>
+          <div class="field"><label>Previous medical records</label><div class="input">Upload, several files allowed</div></div>
+        </div>
+        <div class="field"><label>Earlier enquiry or quotation (optional)</label><div class="input">+ Add notes or a file from WhatsApp or email</div></div>
+        <div class="toolbar"><span class="btn">Save draft</span><span class="btn solid">Next: consent</span></div>
+      </div>
+    </div>
+    <p class="foot">To confirm: should consent be a second step here (suggested), or captured later? You parked this.</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">C3 &middot; Clinic</span><h2>Patient record, Care tab</h2></div>
+    <p class="ask">One record per patient. Tabs follow the six phases, so staff always know where to look.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients/anna-k</div>
+      <div class="pane">
+        <div class="toolbar"><div><b style="font-family:var(--display);font-size:18px">Anna K.</b> <span class="chip c"><i></i>Care &middot; day 6 of 14</span><br><small style="color:var(--muted)">Austria &middot; Dr. A &middot; Guest house, room 12</small></div><span class="btn">Add entry</span></div>
+        <div class="rtabs"><span>Enquiry</span><span>Assessment</span><span>Planning</span><span>Arrival</span><span class="on">Care</span><span>Continuity</span><span>Documents</span></div>
+        <div class="two">
+          <div class="panel">
+            <h3>Today, Friday 17 October</h3>
+            <div class="sched"><span>07:30 Abhyanga</span><span class="check">Done</span></div>
+            <div class="sched"><span>10:00 Shirodhara</span><span>Pending</span></div>
+            <div class="sched"><span>Meals: breakfast, lunch, dinner</span><span>1 of 3 served</span></div>
+            <div class="sched"><span>Medicines: morning, evening</span><span>1 of 2 taken</span></div>
+            <div class="sched"><span>17:00 Doctor review</span><span>Scheduled</span></div>
+          </div>
+          <div class="panel">
+            <h3>Today's check-in from patient</h3>
+            <div class="kv"><span>Medicines taken</span><span>Yes</span></div>
+            <div class="kv"><span>Sleep</span><span><span class="flag">2 of 5</span></span></div>
+            <div class="kv"><span>Appetite</span><span>4 of 5</span></div>
+            <div class="kv"><span>Treatment</span><span>Okay</span></div>
+            <div style="color:var(--muted)">&ldquo;Slept badly, felt warm after treatment.&rdquo;</div>
+            <div class="toolbar"><span class="btn">Add doctor note</span><span class="btn solid">Mark reviewed</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="foot">To confirm: should Documents be its own tab? Which scores should the doctor treat as a flag?</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">P1 &middot; P2 &middot; Patient</span><h2>Home on arrival day, and the daily check-in</h2></div>
+    <p class="ask">Phone view of the installed app. Left: the day the patient lands. Right: a day in Care, with the one-minute check-in.</p>
+    <div class="phones">
+      <figure class="phone">
+        <div class="phone-top"><b>Welcome, Marc</b><span>Arrival &middot; Friday 17 October</span></div>
+        <div class="pane">
+          <div class="journey"><span class="done">Enquiry</span><span class="done">Assess</span><span class="done">Plan</span><span class="now">Arrival</span><span>Care</span><span>After</span></div>
+          <div class="card"><h3>Arriving today</h3><div class="kv"><span>Flight</span><span>LX 148</span></div><div class="kv"><span>Lands</span><span>14:35, Mumbai T2</span></div><span class="btn solid block">I have landed</span></div>
+          <div class="card"><h3>Who is meeting you</h3><div class="kv"><span>Driver</span><span>Ramesh</span></div><div class="kv"><span>Car</span><span>White Innova</span></div><div class="kv"><span>Phone</span><span>+91 ••••• •••••</span></div><div style="color:var(--muted)">Meeting point: arrivals hall, sign with your name.</div></div>
+          <div class="card"><h3>Where you will stay</h3><div>Guest house, Baner, Pune</div><div style="color:var(--muted)">Check-in after 18:00</div></div>
+          <span class="btn block">I need help</span>
+        </div>
+        <div class="tabs"><b>Home</b><span>Plan</span><span>Documents</span><span>Messages</span></div>
+      </figure>
+      <figure class="phone">
+        <div class="phone-top"><b>Day 6 of 14</b><span>Friday 17 October</span></div>
+        <div class="pane">
+          <div class="card"><h3>Today</h3>
+            <div class="sched"><span>07:30 Abhyanga</span><span class="check">Done</span></div>
+            <div class="sched"><span>10:00 Shirodhara</span><span></span></div>
+            <div class="sched"><span>17:00 Doctor review</span><span></span></div></div>
+          <div class="card"><h3>Meals and medicines</h3>
+            <div class="sched"><span>Breakfast: kitchari</span><span class="check">Done</span></div>
+            <div class="sched"><span>Medicine, morning</span><span class="check">Taken</span></div>
+            <div class="sched"><span>Medicine, evening</span><span>Not yet</span></div></div>
+          <div class="card"><h3>Daily check-in &middot; 1 minute</h3>
+            <div>Did you take all medicines?</div><div class="opt"><span class="pick">Yes</span><span>Partly</span><span>No</span></div>
+            <div>How did you sleep?</div><div class="scale"><span>1</span><span class="pick">2</span><span>3</span><span>4</span><span>5</span></div>
+            <div>How is the treatment going?</div><div class="opt"><span>Good</span><span class="pick">Okay</span><span>Not well</span></div>
+            <div class="input">Anything for the doctor?</div>
+            <span class="btn solid block">Send</span></div>
+        </div>
+        <div class="tabs"><span>Home</span><b>Plan</b><span>Documents</span><span>Messages</span></div>
+      </figure>
+    </div>
+    <p class="foot">The app records answers and alerts the doctor. It never interprets them medically. To confirm: is five questions the right length for every day?</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">C4 &middot; Clinic &middot; Care</span><h2>Build tomorrow's plan</h2></div>
+    <p class="ask">The coordinator enters the next day's schedule once. Publishing makes it appear in the patient's Plan tab. Copying from yesterday keeps daily entry short.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients/anna-k/care/day-7</div>
+      <div class="pane">
+        <div class="toolbar"><div><b style="font-family:var(--display);font-size:18px">Anna K. &middot; Day 7</b> <span class="chip c"><i></i>Care</span><br><small style="color:var(--muted)">Saturday 18 October &middot; draft, not yet visible to patient</small></div><span class="btn">Copy from yesterday</span></div>
+        <div class="two">
+          <div class="panel">
+            <h3>Therapies</h3>
+            <div class="sched"><span>07:30 &middot; Abhyanga</span><span>Therapist M &middot; 45 min</span></div>
+            <div class="sched"><span>10:00 &middot; Shirodhara</span><span>Therapist R &middot; 40 min</span></div>
+            <div class="sched"><span>+ Add therapy</span><span></span></div>
+            <h3>Doctor review</h3>
+            <div class="sched"><span>17:00 &middot; Dr. A</span><span>In person</span></div>
+          </div>
+          <div class="panel">
+            <h3>Meals (diet plan from the doctor)</h3>
+            <div class="sched"><span>Breakfast</span><span>Kitchari, warm water</span></div>
+            <div class="sched"><span>Lunch</span><span>Moong dal, rice, steamed greens</span></div>
+            <div class="sched"><span>Dinner</span><span>Light vegetable soup</span></div>
+            <h3>Medicines</h3>
+            <div class="sched"><span>Morning, before food</span><span>Medicine 1, 1 tablet</span></div>
+            <div class="sched"><span>Evening, after food</span><span>Medicine 2, 10 ml</span></div>
+          </div>
+        </div>
+        <div class="field"><label>Stay today</label><div class="input">Guest house, room 12 (same as yesterday)</div></div>
+        <div class="toolbar"><span class="btn">Save draft</span><span class="btn solid">Publish to patient</span></div>
+      </div>
+    </div>
+    <p class="foot">To confirm: should diet and medicines come from templates the doctor sets once, so the coordinator only picks them? Medicine names and doses are dummy text.</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">C5 &middot; Clinic &middot; Care</span><h2>Doctor's review queue</h2></div>
+    <p class="ask">The doctor sees today's check-ins in one list, flagged ones first, and records notes and medicine changes without leaving the screen.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/review</div>
+      <div class="pane">
+        <div class="list">
+          <div class="row"><div><b>Anna K.</b><small>Day 7 &middot; sleep 2 of 5</small></div><span class="flag">Flagged</span><div>&ldquo;Slept badly, felt warm after treatment.&rdquo;</div></div>
+          <div class="row"><div><b>Pierre L.</b><small>Day 3 &middot; medicines partly taken</small></div><span class="flag">Flagged</span><div>&ldquo;Missed evening dose, stomach felt heavy.&rdquo;</div></div>
+          <div class="row"><div><b>Sara W.</b><small>Day 10 &middot; all good</small></div><span class="ok">Reviewed</span><div>Appetite 5 of 5, treatment going well.</div></div>
+        </div>
+        <div class="panel">
+          <h3>Anna K. &middot; note for today</h3>
+          <div class="input">Doctor's note (shared with patient, or private to clinic)</div>
+          <div class="toolbar"><div class="opt"><span class="pick">Share with patient</span><span>Private</span></div><div><span class="btn">Change medicine</span> <span class="btn solid">Save and mark reviewed</span></div></div>
+        </div>
+      </div>
+    </div>
+    <p class="foot">To confirm: what should count as a flag? The app only applies the rules the doctor sets, such as sleep 2 or lower, a missed dose, or the answer &ldquo;Not well&rdquo;.</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">P3 &middot; Patient &middot; Care</span><h2>Doctor's notes and medicines</h2></div>
+    <p class="ask">What the doctor chose to share, plus the medicine list, so nothing is lost in a chat thread.</p>
+    <div class="phones">
+      <figure class="phone">
+        <div class="phone-top"><b>My care</b><span>Day 7 &middot; Saturday 18 October</span></div>
+        <div class="pane">
+          <div class="card"><h3>From Dr. A &middot; today</h3><div>&ldquo;Rest this afternoon. Warm water through the day. We will review sleep at 17:00.&rdquo;</div><small style="color:var(--muted)">Shared 08:10</small></div>
+          <div class="card"><h3>My medicines</h3>
+            <div class="sched"><span>Medicine 1</span><span>Morning, before food</span></div>
+            <div class="sched"><span>Medicine 2</span><span>Evening, after food</span></div>
+            <div style="color:var(--muted)">Course until 31 October</div></div>
+          <div class="card"><h3>Diet guidance</h3><div>Warm, light, freshly cooked food. No cold drinks.</div></div>
+          <span class="btn block">Ask the clinic a question</span>
+        </div>
+        <div class="tabs"><span>Home</span><b>Plan</b><span>Documents</span><span>Messages</span></div>
+      </figure>
+    </div>
+    <p class="foot">To confirm: should patients see the whole medicine history, or only the current course?</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">D1 &middot; Clinic &middot; Departure</span><h2>Plan the departure and follow-up</h2></div>
+    <p class="ask">In the last days of treatment the coordinator arranges the trip home, and the doctor picks a follow-up schedule. The app then creates the check-in prompts.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients/anna-k/departure</div>
+      <div class="pane">
+        <div class="two">
+          <div class="panel">
+            <h3>Travel home</h3>
+            <div class="kv"><span>Departure date</span><span>Fri 31 Oct</span></div>
+            <div class="kv"><span>Flight</span><span>OS 118, 02:05</span></div>
+            <div class="kv"><span>Pickup from guest house</span><span>22:30</span></div>
+            <div class="kv"><span>Driver and car</span><span>Ramesh, white Innova</span></div>
+            <div class="kv"><span>Flight entered by</span><span>Patient</span></div>
+          </div>
+          <div class="panel">
+            <h3>Documents to hand over</h3>
+            <div class="sched"><span>Prescription and medicine list</span><span class="ok">Ready</span></div>
+            <div class="sched"><span>Diet guidance for home</span><span class="ok">Ready</span></div>
+            <div class="sched"><span>Treatment summary</span><span class="flag">Doctor to sign</span></div>
+            <div class="sched"><span>Feedback form</span><span>Sent on departure day</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Follow-up schedule (doctor picks a template)</h3>
+          <div class="opt"><span class="pick">Weekly for 4 weeks, then monthly</span><span>Fortnightly for 3 months</span><span>Custom</span></div>
+          <div class="kv"><span>Check-in prompts</span><span>Mondays 09:00, patient's local time</span></div>
+          <div class="kv"><span>First consultation call</span><span>Week 2 &middot; WhatsApp video</span></div>
+          <div class="kv"><span>Medicine supply</span><span>3 months, runs out about 31 Jan</span></div>
+        </div>
+        <div class="toolbar"><span class="btn">Save draft</span><span class="btn solid">Confirm and start follow-up</span></div>
+      </div>
+    </div>
+    <p class="foot">To confirm: which follow-up templates does the doctor actually use today? The ones shown are examples.</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">D2 &middot; D3 &middot; Patient</span><h2>Departure day, and a follow-up week at home</h2></div>
+    <p class="ask">Left: the day the patient flies home. Right: a Monday check-in after returning, sent on the clinic's schedule.</p>
+    <div class="phones">
+      <figure class="phone">
+        <div class="phone-top"><b>Safe travels, Anna</b><span>Departure &middot; Friday 31 October</span></div>
+        <div class="pane">
+          <div class="journey"><span class="done">Enquiry</span><span class="done">Assess</span><span class="done">Plan</span><span class="done">Arrive</span><span class="done">Care</span><span class="now">Home</span></div>
+          <div class="card"><h3>Your trip home</h3><div class="kv"><span>Pickup</span><span>22:30, guest house</span></div><div class="kv"><span>Flight</span><span>OS 118, 02:05</span></div><div class="kv"><span>Driver</span><span>Ramesh</span></div></div>
+          <div class="card"><h3>Take with you</h3>
+            <div class="sched"><span>Prescription and medicines</span><span class="check">Open</span></div>
+            <div class="sched"><span>Diet guidance for home</span><span class="check">Open</span></div>
+            <div class="sched"><span>Treatment summary</span><span class="check">Open</span></div></div>
+          <div class="card"><h3>What happens next</h3><div>Weekly check-ins start Monday 3 November. A call with Dr. A is planned for week 2.</div></div>
+          <span class="btn block">Share your feedback</span>
+        </div>
+        <div class="tabs"><b>Home</b><span>Plan</span><span>Documents</span><span>Messages</span></div>
+      </figure>
+      <figure class="phone">
+        <div class="phone-top"><b>Weekly check-in</b><span>Week 2 at home &middot; Monday 10 November</span></div>
+        <div class="pane">
+          <div class="card"><h3>Your medicines</h3>
+            <div>Have you taken them as advised this week?</div><div class="opt"><span class="pick">Yes</span><span>Partly</span><span>No</span></div>
+            <div>Is the diet working at home?</div><div class="opt"><span>Easy</span><span class="pick">Some difficulty</span><span>Hard</span></div></div>
+          <div class="card"><h3>How are you?</h3>
+            <div>Energy this week</div><div class="scale"><span>1</span><span>2</span><span>3</span><span class="pick">4</span><span>5</span></div>
+            <div class="input">Anything for the doctor?</div>
+            <span class="btn solid block">Send</span></div>
+          <div class="card"><h3>Next</h3><div>Video call with Dr. A, Thursday 13 November, 17:00 your time.</div><span class="btn block">Ask to reschedule</span></div>
+        </div>
+        <div class="tabs"><b>Home</b><span>Plan</span><span>Documents</span><span>Messages</span></div>
+      </figure>
+    </div>
+    <p class="foot">To confirm: should the patient be able to request an extra consultation here, or only reply to clinic prompts?</p>
+  </section>
+
+  <section class="screen">
+    <div class="screen-head"><span class="tag">D4 &middot; Clinic &middot; Continuity</span><h2>Patient record, Continuity tab</h2></div>
+    <p class="ask">After departure the record keeps growing: check-ins, consultations the doctor gave by WhatsApp or phone, medicine supply and the nudge to invite the patient back.</p>
+    <div class="dev">
+      <div class="dev-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span>&nbsp; clinic.example/patients/anna-k</div>
+      <div class="pane">
+        <div class="toolbar"><div><b style="font-family:var(--display);font-size:18px">Anna K.</b> <span class="chip k"><i></i>Continuity &middot; week 6</span><br><small style="color:var(--muted)">Austria &middot; Episode 1 closed 31 Oct &middot; record kept for return visits</small></div><div><span class="btn">Log consultation</span> <span class="btn solid">Start new episode</span></div></div>
+        <div class="rtabs"><span>Enquiry</span><span>Assessment</span><span>Planning</span><span>Arrival</span><span>Care</span><span class="on">Continuity</span><span>Documents</span></div>
+        <div class="two">
+          <div class="panel">
+            <h3>Sleep score at each weekly check-in</h3>
+            <div class="bars"><span class="low" style="height:40%"></span><span class="low" style="height:40%"></span><span style="height:60%"></span><span style="height:80%"></span><span style="height:80%"></span><span style="height:100%"></span></div>
+            <div class="barlab"><span>Wk 1</span><span>Wk 2</span><span>Wk 3</span><span>Wk 4</span><span>Wk 5</span><span>Wk 6</span></div>
+            <small style="color:var(--muted)">Scores 2, 2, 3, 4, 4, 5 on a 1 to 5 scale. Medicines taken at every check-in except week 2 (partly).</small>
+            <h3>Medicine supply</h3>
+            <div class="track low"><i style="width:55%"></i></div>
+            <small style="color:var(--muted)">About 6 weeks left of 3 months. Reorder prompt due early January.</small>
+          </div>
+          <div class="panel">
+            <h3>Consultations after departure</h3>
+            <div class="tl">
+              <div><b>13 Nov</b><span>WhatsApp video, Dr. A. Reviewed sleep and diet at home; no change to medicines.</span></div>
+              <div><b>27 Nov</b><span>Phone call, Dr. A. Patient asked about travel and diet; advice logged.</span></div>
+              <div><b>11 Dec</b><span>WhatsApp message, Dr. A. Medicine dose reminder.</span></div>
+            </div>
+            <h3>Return visit</h3>
+            <div class="kv"><span>Suggested nudge</span><span>Sep 2027, about 11 months</span></div>
+            <div class="kv"><span>Returns skip Enquiry</span><span>Start at Assessment or Planning</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="foot">To confirm: do you want a small trend chart like this for the doctor, or only the list of answers? The return-visit nudge is a proposal.</p>
+  </section>
+</div>
