@@ -187,7 +187,7 @@ Format: ID, requirement, actor, status, priority (MoSCoW, itself proposed). Requ
 | FR-PLN-04 | Visa tracker per traveller: type (AY-1 patient, AY-2 attendants, up to two), supporting letter, application status, expiry | Staff | PROPOSED | Should |
 | FR-PLN-05 | Pre-arrival information pack in the app (what to bring, weather, diet, transfers) | Staff | PROPOSED; content and languages PARKED (PK-07) | Could |
 | FR-PLN-06 | Pre-arrival questions kept in one thread | Patient, staff | PROPOSED | Could |
-| FR-PLN-07 | Payments (deposit, balance) | Staff | PARKED (PK-06). Default: record payments received, no online payments | Could |
+| FR-PLN-07 | Payments (deposit, balance) | Staff | DECIDED (PK-06): record payments received, no online payments. Data fields PROPOSED | Should |
 | FR-PLN-08 | Capture consent at plan confirmation as an alternative to onboarding | Patient | PARKED (PK-04) | Must |
 
 ### 8.6 Arrival (ARR)

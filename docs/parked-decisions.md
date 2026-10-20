@@ -18,7 +18,7 @@ This register has two parts:
 | PK-03 | **Resolved (owner):** no therapist or kitchen logins in v1; the coordinator enters on their behalf | n/a | Coordinator enters | Roles, scope | Ravi, clinic | Ask the clinic how daily plans reach therapists today |
 | PK-04 | Consent: timing, wording, who approves legally | At onboarding / at plan confirmation; text per language | Capture at onboarding as a second step, versioned and timestamped | Onboarding step 2, privacy, go-live | Ravi, lawyer | Lawyer reviews wording for DPDP and GDPR |
 | PK-05 | Hosting region of database and functions | India / EU / other | None | Setup, residency, latency | Ravi, lawyer | Decide after legal advice; check region list (spike S-3) |
-| PK-06 | Payments inside the app | Record only / online payments | Record only | Planning scope, compliance | Ravi | Keep record-only for v1 |
+| PK-06 | **Resolved (owner):** staff record payments received (deposit, balance); no online payments in v1 | n/a | Record only | Planning scope, compliance | Ravi | Keep record-only for v1 |
 | PK-07 | **Resolved (owner):** English only in v1; text stays in resource files so languages can be added later | n/a | English only | Content, translation cost | Ravi | Look at the countries of recent patients |
 | PK-08 | Sending WhatsApp messages from the app | Manual logging / WhatsApp Business API | Manual logging plus email and in-app prompts | Notifications, cost | Ravi | Revisit after the pilot with real usage and costs |
 | PK-09 | What counts as a flag in check-ins | Rules set by the doctor | None. The app applies only the doctor's rules | Care review queue | Doctor | Doctor session with sample check-ins |
