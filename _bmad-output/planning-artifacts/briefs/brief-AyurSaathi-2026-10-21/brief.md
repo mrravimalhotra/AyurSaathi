@@ -1,6 +1,6 @@
 ---
 title: "Product Brief: AyurSaathi"
-status: draft
+status: complete
 created: 2026-10-21
 updated: 2026-10-22
 ---
@@ -9,11 +9,11 @@ updated: 2026-10-22
 
 ## Executive Summary
 
+This brief covers a prototype: invented data only, not rolled out to users. Its purpose is for Ravi to see how the journey works end to end and decide whether to take it to Ayurvedgram.
+
 AyurSaathi is a web app, installable on a phone's home screen, that runs the international patient journey for an Ayurvedic clinic: enquiry, assessment, planning, arrival, care and follow-up, on one shared patient record that lasts across visits. Clinic staff and doctors work in a clinic area; patients see their own plan, travel details and check-ins.
 
-The first clinic is Ayurvedgram, Pune, which has treated more than 510 patients from 13 countries over about nine years. The product is built as a common core that every clinic shares, with each clinic's terminology, templates and clinical rules held as its own settings. The goal beyond the first clinic is a platform on which several Ayurveda clinics run.
-
-This brief covers a prototype. It uses invented data only and is not rolled out to users. Its purpose is for the owner to see how the journey works end to end and decide whether to take it to Ayurvedgram.
+The first clinic is Ayurvedgram, Pune, which has treated more than 510 patients from 13 countries over about nine years. The product is built as a common core that every clinic shares, with each clinic's terminology, templates and clinical rules held as its own settings.
 
 ## The Problem
 
@@ -43,15 +43,21 @@ Public medical-tourism platforms are marketplaces and Ayurveda clinic software i
 
 ## Success Criteria (prototype)
 
-Judged by the owner alone. The prototype is a success if:
+Ravi alone judges. The prototype is a success if:
 1. **The full demo journey works end to end** with dummy data: sign-in, onboarding a patient, the patient opening the invite, flight and pickup, the day plan, a check-in, and the doctor's review.
 2. **Isolation is proven by tests:** no patient can read another's data, and no clinic can read another clinic's data.
 
-Short data entry for staff and ease of use for older patients are deliberately out of the prototype's pass mark and become pilot criteria. Numeric targets wait for the baseline measurement.
+Short data entry for staff and ease of use for older patients are pilot criteria, not prototype ones. Numeric targets wait for the baseline measurement.
 
 ## Scope
 
-**In (prototype):** an end-to-end working prototype of the whole journey, built on invented data: sign-in and roles, clinic isolation, patient record and episodes, onboarding with documents and the consent step, enquiry and quotation log, assessment log, planning, arrival (flight, pickup, stay), care (daily plan, patient day view, check-in, doctor review) and continuity (follow-up check-ins, consultation log). Each phase works at a simple level so the journey can be walked from start to finish. English only.
+**In (prototype):** an end-to-end working prototype of the whole journey on invented data, English only. Each phase works at a simple level so the journey can be walked from start to finish:
+- Foundation: sign-in and roles, clinic isolation, patient record and episodes.
+- Onboarding: patient details, documents, the consent step.
+- Enquiry, assessment and planning: enquiry and quotation log, assessment log, programme and cost.
+- Arrival: flight, pickup, stay.
+- Care: daily plan, patient day view, check-in, doctor review.
+- Continuity: follow-up check-ins, consultation log.
 
 **Later (not prototype work):** finer details within each phase, WhatsApp setup, and email provider configuration with a verified domain. Until then, sign-in links and notifications use a development mail setup or appear in the app.
 
@@ -61,9 +67,8 @@ Short data entry for staff and ease of use for older patients are deliberately o
 
 - Ayurvedgram is not yet engaged. A sponsor, one doctor session (clinical fields, flag rules, follow-up templates, check-in questions), and time with the coordinator are needed before a pilot.
 - Legal review of consent, retention and cross-border rules is needed before any real data.
-- Patient screens are untested with older users until the pilot.
-- Reminders reach patients only by email and in-app messages while WhatsApp sending is out, which is weaker than today's WhatsApp contact.
-- The core-versus-customizable boundary is a draft and must be settled in the PRD and architecture.
+- Patient screens stay untested with older users until the pilot.
+- Reminders reach patients only by email and in-app messages while WhatsApp sending is out, a weaker channel than today's WhatsApp contact.
 
 ## Vision
 
