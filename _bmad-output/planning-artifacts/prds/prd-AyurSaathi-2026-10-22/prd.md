@@ -1,6 +1,6 @@
 ---
 title: "PRD: AyurSaathi"
-status: draft
+status: final
 created: 2026-10-22
 updated: 2026-10-22
 ---
@@ -12,7 +12,7 @@ updated: 2026-10-22
 
 This PRD defines an end-to-end working prototype of AyurSaathi for Ravi (product owner and sole decision-maker) and for the downstream BMAD steps: UX, architecture, epics and stories, and build. It builds on the finalized product brief (`_bmad-output/planning-artifacts/briefs/brief-AyurSaathi-2026-10-21/`) and on the earlier planning set in `docs/` (`brd.md`, `architecture.md`, `architecture-review.md`, `parked-decisions.md`, `ux/mockups.html`). It does not duplicate them. Technical choices are in `addendum.md`. Vocabulary is anchored in the Glossary; features group the functional requirements (FR-n, numbered globally); every assumption is tagged inline and indexed in section 10.
 
-**Scoping rule:** some requirements below come from candidate items the owner has not formally confirmed (the register's Part B). They are in this PRD only because the owner chose them for the prototype or because the journey cannot be walked without them. They are prototype defaults, not confirmed product requirements, and every invented parameter (limits, timings, formats) carries an inline `[ASSUMPTION]` tag.
+**Scoping rule:** some requirements below come from candidate items the owner has not formally confirmed (Part B of `docs/parked-decisions.md`, the register of unconfirmed items; PK-nn are its open questions, S-n are architecture spikes, BR-nn are BRD business rules). They are in this PRD only because the owner chose them for the prototype or because the journey cannot be walked without them. They are prototype defaults, not confirmed product requirements, and every invented parameter (limits, timings, formats) carries an inline `[ASSUMPTION]` tag.
 
 **Scope of this PRD:** an end-to-end working prototype on invented data. It is not rolled out to users. Finer details, WhatsApp setup and email provider configuration come later.
 
@@ -48,7 +48,7 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **UJ-2. Meera onboards a patient and publishes tomorrow's plan.**
   - **Persona + context:** Meera, coordinator, on her phone between other tasks.
   - **Entry state:** Signed in as coordinator, in the clinic area.
-  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; she saves a draft when interrupted and resumes; uploads a passport photo from her phone; submits and the invite is sent. During care she opens a patient's day plan, copies yesterday's plan, changes two items and publishes it.
+  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; she saves a draft when interrupted and resumes; uploads a passport photo from her phone; submits and the invite is sent. During care she opens a Patient's Day Plan, copies yesterday's Day Plan, changes two items and publishes it.
   - **Climax:** the patient's day view updates and the patient is notified.
   - **Resolution:** the plan shows as published with a time. Tomorrow starts from this plan.
   - **Edge case:** a patient with the same email already exists. The app warns and offers to open that record.
@@ -56,7 +56,7 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **UJ-3. Dr. A reviews the morning's check-ins.**
   - **Persona + context:** Dr. A, on a laptop or phone, at the start of the day.
   - **Entry state:** Signed in as doctor.
-  - **Path:** opens the review queue; flagged check-ins appear first with the reason; opens one, reads the answers, adds a note marked Shared or Staff-only, adjusts a medicine, marks the check-in reviewed.
+  - **Path:** opens the Review Queue; flagged check-ins appear first with the reason; opens one, reads the answers, adds a note marked Shared or Staff-only, adjusts a medicine, marks the check-in reviewed.
   - **Climax:** the patient sees the shared note and the changed medicine on her next visit to the day view.
   - **Resolution:** the check-in leaves the queue. The Staff-only Note is visible only to Staff.
   - **Edge case:** the sample flag rule marks too many check-ins. Dr. A changes the rule in settings.
@@ -69,19 +69,19 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
   - **Resolution:** the coordinator approves the request and logs the consultation after it takes place.
   - **Edge case:** she is in a different time zone. Times show in her local time.
 
+- **UJ-5. Marc returns for a second visit.**
+  - **Persona + context:** Marc, treated last year, returning.
+  - **Entry state:** Existing patient record, closed first episode.
+  - **Path:** the coordinator opens Marc's record and starts a new Episode at Assessment, skipping Enquiry; earlier documents and history are already there.
+  - **Climax:** nothing is re-entered.
+  - **Resolution:** the new episode moves through the phases independently of the first.
+
 - **UJ-6. Meera and Dr. A record the journey before and after treatment.**
   - **Persona + context:** Meera, coordinator, and Dr. A, in the days around Anna's visit.
   - **Entry state:** Signed in; Anna's Episode is in Enquiry.
   - **Path:** Meera logs the WhatsApp enquiry and the first Quotation; Dr. A logs the assessment call and its outcome; Meera records the Programme and the deposit received; after Anna's care, Meera records treatments given and logs her departure assistance.
   - **Climax:** Anna's whole history sits in one record.
   - **Resolution:** each step moves the Episode to the next Phase.
-
-- **UJ-5. Marc returns for a second visit.**
-  - **Persona + context:** Marc, treated last year, returning.
-  - **Entry state:** Existing patient record, closed first episode.
-  - **Path:** the coordinator opens Marc's record and starts a new episode at Assessment, skipping Enquiry; earlier documents and history are already there.
-  - **Climax:** nothing is re-entered.
-  - **Resolution:** the new episode moves through the phases independently of the first.
 
 ## 3. Glossary
 
@@ -102,8 +102,8 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **Flag** — a mark on a Check-in set by a Flag Rule.
 - **Flag Rule** — a Clinic Setting that decides which Check-in answers raise a Flag. The prototype ships a Sample Flag Rule set.
 - **Review Queue** — the Doctor's list of Check-ins awaiting review, Flagged first.
-- **Note** — a Doctor's record, marked Shared (visible to the Patient) or Private (visible to Staff-only).
-- **Visibility** — whether a Note, assessment or Document is Shared (visible to the Patient) or Staff-only (visible to Staff-only). Always written "Staff-only".
+- **Note** — a Doctor's record, marked Shared (visible to the Patient) or Staff-only (visible to Staff only).
+- **Visibility** — whether a Note, assessment or Document is Shared (visible to the Patient) or Staff-only (visible to Staff only). Always written "Staff-only", never "Private".
 - **Assessment** (the logged record) — a Doctor's record of an assessment with date, method, findings and outcome. Not to be confused with the Assessment Phase.
 - **Medicine** — a prescribed item with name, dose, schedule, start date and duration. "Current course" means the Medicines active today.
 - **Pickup** — the car, driver, meeting point and time entered by Staff for a Patient's arrival.
@@ -155,7 +155,7 @@ Staff can sign in with email and password. Realizes UJ-2, UJ-3.
 A Patient can sign in using an emailed single-use link, or a code typed on the same screen if the link fails. No password. Realizes UJ-1, UJ-4.
 
 **Consequences (testable):**
-- A used or expired link is refused; the code remains available.
+- A used or expired link is refused; the Patient can still sign in with the code until it expires.
 - The link and code expire after a set period. `[ASSUMPTION: one hour, as the platform default; configurable.]`
 - Re-requesting a link within a short window of the last request is refused with a message saying when to retry. `[ASSUMPTION: 60 seconds.]`
 
@@ -181,7 +181,7 @@ A Patient can read only their own record, Shared Notes and Shared Documents, and
 - Patient A cannot read a Staff-only Note or Staff-only Document of their own record.
 
 #### FR-6: Isolation test suite
-The system can run an automated suite that exercises FR-4 and FR-5 against every clinic-owned table and the document store, as Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y. This is the prototype's second acceptance criterion.
+The system can run an automated suite that exercises FR-4 and FR-5 against every clinic-owned table and the document store, as Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y. This is the prototype's second acceptance criterion (the first is the demo journey, SM-1; this one is SM-2 in section 7).
 
 **Consequences (testable):**
 - The suite lists every table and fails if a table has no isolation test.
@@ -445,7 +445,7 @@ Staff can log departure travel assistance. Realizes UJ-6.
 - An entry stores date, what was arranged and who arranged it, against the Episode.
 
 #### FR-41: Schedule follow-up Check-ins
-Staff can schedule follow-up Check-ins for a Patient, which appear to the Patient at the scheduled time in the Patient's time zone. Realizes UJ-4.
+Staff can schedule follow-up Check-ins for a Patient, which appear to the Patient at the scheduled date and time, interpreted in the Patient's time zone. Realizes UJ-4.
 
 **Consequences (testable):**
 - Check-ins are initiated by the Clinic's schedule, never by the Patient.
@@ -571,7 +571,7 @@ An end-to-end working prototype of the six Phases on invented data: access, role
 9. What is the sending domain and email provider setup for pilot? Deferred. (PK-22)
 
 ## 10. Assumptions Index
-Every `[ASSUMPTION]` in the document, for explicit confirmation:
+Every `[ASSUMPTION]` tagged inline, plus scope and structure assumptions stated in sections 6 and 8 (marked "section" below), for explicit confirmation:
 - Glossary, Doctor and FR-8: the Doctor owns Check-in questions and Flag Rules; Admin owns branding, terminology and users.
 - Role table (section 4.1): the capability split by role.
 - FR-2: link and code expire after one hour; 60-second re-request window.
