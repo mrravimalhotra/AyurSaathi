@@ -10,7 +10,9 @@ updated: 2026-10-22
 
 ## 0. Document Purpose
 
-This PRD defines an end-to-end working prototype of AyurSaathi for Ravi (product owner and sole decision-maker) and for the downstream BMAD steps: UX, architecture, epics and stories, and build. It builds on the finalized product brief (`_bmad-output/planning-artifacts/briefs/brief-AyurSaathi-2026-10-21/`) and on the earlier planning set in `docs/` (`brd.md`, `architecture.md`, `architecture-review.md`, `parked-decisions.md`, `ux/mockups.html`). It does not duplicate them. Technical choices are in `addendum.md`. Vocabulary is anchored in the Glossary; features group the functional requirements (FR-n, numbered globally); every assumption is tagged inline and indexed in section 9.
+This PRD defines an end-to-end working prototype of AyurSaathi for Ravi (product owner and sole decision-maker) and for the downstream BMAD steps: UX, architecture, epics and stories, and build. It builds on the finalized product brief (`_bmad-output/planning-artifacts/briefs/brief-AyurSaathi-2026-10-21/`) and on the earlier planning set in `docs/` (`brd.md`, `architecture.md`, `architecture-review.md`, `parked-decisions.md`, `ux/mockups.html`). It does not duplicate them. Technical choices are in `addendum.md`. Vocabulary is anchored in the Glossary; features group the functional requirements (FR-n, numbered globally); every assumption is tagged inline and indexed in section 10.
+
+**Scoping rule:** some requirements below come from candidate items the owner has not formally confirmed (the register's Part B). They are in this PRD only because the owner chose them for the prototype or because the journey cannot be walked without them. They are prototype defaults, not confirmed product requirements, and every invented parameter (limits, timings, formats) carries an inline `[ASSUMPTION]` tag.
 
 **Scope of this PRD:** an end-to-end working prototype on invented data. It is not rolled out to users. Finer details, WhatsApp setup and email provider configuration come later.
 
@@ -54,9 +56,9 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **UJ-3. Dr. A reviews the morning's check-ins.**
   - **Persona + context:** Dr. A, on a laptop or phone, at the start of the day.
   - **Entry state:** Signed in as doctor.
-  - **Path:** opens the review queue; flagged check-ins appear first with the reason; opens one, reads the answers, adds a note marked shared or private, adjusts a medicine, marks the check-in reviewed.
+  - **Path:** opens the review queue; flagged check-ins appear first with the reason; opens one, reads the answers, adds a note marked Shared or Staff-only, adjusts a medicine, marks the check-in reviewed.
   - **Climax:** the patient sees the shared note and the changed medicine on her next visit to the day view.
-  - **Resolution:** the check-in leaves the queue. The private note is visible only to clinic staff.
+  - **Resolution:** the check-in leaves the queue. The Staff-only Note is visible only to Staff.
   - **Edge case:** the sample flag rule marks too many check-ins. Dr. A changes the rule in settings.
 
 - **UJ-4. Anna, back home, answers a follow-up and asks for a call.**
@@ -66,6 +68,13 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
   - **Climax:** the app confirms the check-in was received.
   - **Resolution:** the coordinator approves the request and logs the consultation after it takes place.
   - **Edge case:** she is in a different time zone. Times show in her local time.
+
+- **UJ-6. Meera and Dr. A record the journey before and after treatment.**
+  - **Persona + context:** Meera, coordinator, and Dr. A, in the days around Anna's visit.
+  - **Entry state:** Signed in; Anna's Episode is in Enquiry.
+  - **Path:** Meera logs the WhatsApp enquiry and the first Quotation; Dr. A logs the assessment call and its outcome; Meera records the Programme and the deposit received; after Anna's care, Meera records treatments given and logs her departure assistance.
+  - **Climax:** Anna's whole history sits in one record.
+  - **Resolution:** each step moves the Episode to the next Phase.
 
 - **UJ-5. Marc returns for a second visit.**
   - **Persona + context:** Marc, treated last year, returning.
@@ -77,14 +86,14 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 ## 3. Glossary
 
 - **Clinic** — an organisation that uses AyurSaathi. Owns its patients, staff, settings and data. Ayurvedgram, Pune is the first Clinic.
-- **Clinic Settings** — per-Clinic configuration: name and branding, terminology labels, check-in questions, flag rules, templates. Distinct from the shared core.
+- **Clinic Settings** — per-Clinic configuration: name and branding, terminology labels, Check-in questions, Flag Rules, templates. Distinct from the shared core. Branding and terminology are edited by Admin; Check-in questions and Flag Rules by the Doctor.
 - **Patient** — a person treated by a Clinic. One permanent record per Patient per Clinic.
 - **Episode** — one visit or treatment cycle of a Patient. A Patient has many Episodes.
 - **Phase** — one of six stages an Episode moves through: Enquiry, Assessment, Planning, Arrival, Care, Continuity.
 - **Staff** — Coordinator, Doctor or Admin of a Clinic.
 - **Coordinator** — Staff who enters logistics and daily plans.
-- **Doctor** — Staff who records assessments, notes, medicines and reviews check-ins.
-- **Admin** — Staff who manages users and Clinic Settings.
+- **Doctor** — Staff who records assessments, Notes and medicines, reviews Check-ins, and edits Flag Rules and Check-in questions. `[ASSUMPTION: the Doctor, not Admin, owns clinical rules, because the app applies only the doctor's rules.]`
+- **Admin** — Staff who manages users and the branding and terminology parts of Clinic Settings.
 - **Invite** — an email sent to a Patient with a single-use link and a code, used to sign in for the first time.
 - **Quotation** — a priced offer for a programme, versioned within an Episode.
 - **Programme** — the treatment plan and approximate cost settled before travel. Linked to an accepted Quotation.
@@ -93,16 +102,43 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **Flag** — a mark on a Check-in set by a Flag Rule.
 - **Flag Rule** — a Clinic Setting that decides which Check-in answers raise a Flag. The prototype ships a Sample Flag Rule set.
 - **Review Queue** — the Doctor's list of Check-ins awaiting review, Flagged first.
-- **Note** — a Doctor's record, marked Shared (visible to the Patient) or Private (visible to Staff only).
+- **Note** — a Doctor's record, marked Shared (visible to the Patient) or Private (visible to Staff-only).
+- **Visibility** — whether a Note, assessment or Document is Shared (visible to the Patient) or Staff-only (visible to Staff-only). Always written "Staff-only".
+- **Assessment** (the logged record) — a Doctor's record of an assessment with date, method, findings and outcome. Not to be confused with the Assessment Phase.
+- **Medicine** — a prescribed item with name, dose, schedule, start date and duration. "Current course" means the Medicines active today.
+- **Pickup** — the car, driver, meeting point and time entered by Staff for a Patient's arrival.
+- **Accommodation** — where a Patient stays, with check-in details, entered by Staff.
+- **Payment** — a recorded amount received from a Patient (deposit, balance or other). Record only.
+- **Alert** — an item in Staff's needs-attention block: an unreviewed Flagged Check-in, "I have landed", "I need help", a flight-detail edit, or a pending Consultation Request.
+- **Notification** — a stored message to one user (in-app inbox), optionally also sent by email.
 - **Consent** — a Patient's recorded agreement, versioned and timestamped, captured as step 2 of onboarding.
 - **Consultation** — a Doctor's contact with a Patient by phone, WhatsApp or video, logged after it takes place.
 - **Consultation Request** — a Patient's request for an extra Consultation. Approved or declined by the Clinic.
-- **Document** — an uploaded or generated file attached to a Patient, with visibility Shared or Staff only.
+- **Document** — an uploaded or generated file attached to a Patient, with visibility Shared or Staff-only.
 
 ## 4. Features
 
 ### 4.1 Access, roles and clinic isolation
 **Description:** One application for Staff and Patients. Staff sign in with email and password. Patients sign in with an emailed single-use link, or a code typed on the same screen. Every clinic-owned record belongs to a Clinic, and access is limited by Clinic first and role second. The prototype's proof of safety is an automated test suite, not manual checking. Realizes UJ-1, UJ-2, UJ-3.
+
+**Who can do what (prototype).** Where an FR says "Staff", it means the roles in this table.
+
+| Capability | Coordinator | Doctor | Admin |
+|---|---|---|---|
+| Onboard Patients, Invites, Documents | yes | yes | yes |
+| Patient list, Episodes and Phase moves | yes | yes | yes |
+| Log enquiry, Quotation, Programme, Payments | yes | read | yes |
+| Log Assessment | no | yes | no |
+| Flight, Pickup, Accommodation | yes | read | yes |
+| Build and publish Day Plans; record treatments given | yes | yes | yes |
+| Notes, findings, Medicines | no | yes | read |
+| Review Queue and reviewing Check-ins | read | yes | read |
+| Schedule follow-up Check-ins; departure assistance | yes | yes | yes |
+| Log Consultations; decide Consultation Requests | yes | yes | yes |
+| Check-in questions and Flag Rules | no | yes | no |
+| Branding, terminology, users | no | no | yes |
+
+`[ASSUMPTION: this role split is the prototype default, derived from the earlier authorisation matrix; confirm with the clinic.]`
 
 **Functional Requirements:**
 
@@ -120,14 +156,15 @@ A Patient can sign in using an emailed single-use link, or a code typed on the s
 
 **Consequences (testable):**
 - A used or expired link is refused; the code remains available.
-- Re-requesting a link within 60 seconds of the last request is refused with a message saying when to retry.
+- The link and code expire after a set period. `[ASSUMPTION: one hour, as the platform default; configurable.]`
+- Re-requesting a link within a short window of the last request is refused with a message saying when to retry. `[ASSUMPTION: 60 seconds.]`
 
 #### FR-3: Roles
 The system can restrict each screen and action to Patient, Coordinator, Doctor or Admin. Realizes UJ-2, UJ-3.
 
 **Consequences (testable):**
 - A Patient cannot open any clinic-area route.
-- A Coordinator cannot write Doctor Notes or prescribed medicines.
+- A Coordinator cannot write Notes or prescribed medicines.
 
 #### FR-4: Clinic isolation
 Every clinic-owned record belongs to exactly one Clinic, and a user can read or write only records of their own Clinic.
@@ -141,7 +178,7 @@ A Patient can read only their own record, Shared Notes and Shared Documents, and
 
 **Consequences (testable):**
 - Patient A cannot read any row of Patient B in any table.
-- Patient A cannot read a Private Note or Staff-only Document of their own record.
+- Patient A cannot read a Staff-only Note or Staff-only Document of their own record.
 
 #### FR-6: Isolation test suite
 The system can run an automated suite that exercises FR-4 and FR-5 against every clinic-owned table and the document store, as Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y. This is the prototype's second acceptance criterion.
@@ -157,11 +194,12 @@ Staff and Patients can install the app on a phone home screen, and use it on a l
 - The app provides a web manifest and a minimal service worker; no health data is cached offline.
 
 #### FR-8: Clinic Settings
-Admin can set the Clinic's name, branding and terminology labels, and Check-in questions and Flag Rules. Ayurvedgram is the seeded Clinic.
+Admin can set the Clinic's name, branding and terminology labels. The Doctor can set Check-in questions and Flag Rules. Ayurvedgram is the seeded Clinic. `[ASSUMPTION: split by role as in the Glossary.]`
 
 **Consequences (testable):**
 - Changing a label in Clinic Settings changes it on the screens without a code change.
 - No screen text names Ayurvedgram except through Clinic Settings.
+- Admin cannot edit Flag Rules; a Coordinator cannot edit any Clinic Setting.
 
 **Feature-specific NFRs:** all queries run as the signed-in user; the service key is used only in server-side jobs.
 **Notes:** `[NOTE FOR PM]` the core-versus-customizable split is a draft (addendum). Confirm at architecture.
@@ -176,7 +214,7 @@ Staff can list Patients with their current Phase, filter by Phase and search by 
 
 **Consequences (testable):**
 - Search returns only Patients of the Staff user's Clinic.
-- A needs-attention block shows alerts: unreviewed Flagged Check-ins, "I need help" alerts, pending Consultation Requests.
+- A needs-attention block shows Alerts.
 
 #### FR-10: Episodes and phase moves
 Staff can move an Episode forward or back between Phases, and the system records who, when, and an optional note. Realizes UJ-2.
@@ -256,31 +294,31 @@ After onboarding, the system can send the Patient an Invite email with a single-
 **Functional Requirements:**
 
 #### FR-20: Log an enquiry
-Staff can log an enquiry with date, channel (WhatsApp, email, phone, other), summary, treatment interest and who handled it.
+Staff can log an enquiry with date, channel (WhatsApp, email, phone, other), summary, treatment interest and who handled it. Realizes UJ-6.
 
 **Consequences (testable):**
 - Returning Patients are not required to have an enquiry.
 
 #### FR-21: Log a Quotation
-Staff can log each Quotation with version, date sent, amount and currency, validity and status.
+Staff can log each Quotation with version, date sent, amount and currency, validity and status. Realizes UJ-6.
 
 **Consequences (testable):**
 - Amount must be greater than zero; versions within an Episode are unique and increasing.
 
-#### FR-22: Log an assessment
-Doctor and Staff can log an assessment with date, method (in person, WhatsApp call, phone, video, email), Doctor, findings and outcome, marked Shared or Private.
+#### FR-22: Log an Assessment
+The Doctor can log an Assessment with date, method (in person, WhatsApp call, phone, video, email), Doctor, findings and outcome, marked Shared or Staff-only. Realizes UJ-6.
 
 **Consequences (testable):**
-- A Patient sees only Shared assessments.
+- A Patient sees only Shared Assessments.
 
 #### FR-23: Record the Programme
-Staff can record the Programme and approximate cost linked to the accepted Quotation, with a status (provisional, confirmed, refined on arrival).
+Staff can record the Programme and approximate cost linked to the accepted Quotation, with a status (provisional, confirmed, refined on arrival). Realizes UJ-6.
 
 **Consequences (testable):**
 - A Programme can link only to a Quotation of the same Episode.
 
 #### FR-24: Record payments received
-Staff can record payments received (deposit, balance, other) with amount, currency, date and method. No online payments.
+Staff can record payments received (deposit, balance, other) with amount, currency, date and method. No online payments. Realizes UJ-6.
 
 **Consequences (testable):**
 - The app stores no card data.
@@ -294,7 +332,7 @@ Staff can record payments received (deposit, balance, other) with amount, curren
 Staff or the Patient can enter flight number and arrival date and time. Realizes UJ-1.
 
 **Consequences (testable):**
-- Flight number must be airline code plus number (for example "LX 148").
+- Flight number must be airline code plus number (for example "LX 148"). `[ASSUMPTION: this format check.]`
 - Arrival time is stored in UTC and shown in the viewer's local time.
 
 #### FR-26: Pickup
@@ -304,10 +342,18 @@ Staff can enter pickup details (driver name and phone, car, plate, meeting point
 - A Patient sees pickup details only for their own Episode.
 
 #### FR-27: Accommodation
-Staff can enter accommodation and check-in details, visible to the Patient. Realizes UJ-1.
+Staff can enter Accommodation and check-in details, visible to the Patient. Realizes UJ-1.
+
+**Consequences (testable):**
+- A Patient sees Accommodation only for their own Episode.
+- A change by Staff updates the Patient's arrival-day card.
 
 #### FR-28: Arrival-day card
 A Patient can see an arrival-day card on the home screen with flight, who meets them and where they stay. Realizes UJ-1.
+
+**Consequences (testable):**
+- The card shows flight number and arrival time in the Patient's local time, the driver's name and phone, and the Accommodation.
+- A field Staff have not yet entered shows as "Not yet confirmed".
 
 #### FR-29: "I have landed" and "I need help"
 A Patient can tap "I have landed" or "I need help", and the Coordinator sees an alert. Realizes UJ-1.
@@ -327,16 +373,16 @@ When a Patient edits flight details, the Coordinator receives an alert.
 **Functional Requirements:**
 
 #### FR-31: Post-arrival findings and Notes
-Doctor can record post-arrival findings and Notes, each marked Shared or Private. Realizes UJ-3.
+Doctor can record post-arrival findings and Notes, each marked Shared or Staff-only. Realizes UJ-3.
 
 **Consequences (testable):**
-- A Patient sees Shared Notes only. A Coordinator reads Shared Notes and never Private ones.
+- A Patient sees Shared Notes only. A Coordinator reads Shared Notes and never Staff-only ones.
 
 #### FR-32: Prescribed medication
 Doctor can record medicines with name, dose, schedule, start date and duration. Realizes UJ-3.
 
 **Consequences (testable):**
-- A Patient sees the current course and can request history, shown on request.
+- A Patient sees the current course and can ask to see the history, which is then shown.
 
 #### FR-33: Build and publish a Day Plan
 Staff can build a Day Plan from treatments, diet, medicines and accommodation, copy yesterday's plan, and publish it to the Patient. Realizes UJ-2.
@@ -347,7 +393,11 @@ Staff can build a Day Plan from treatments, diet, medicines and accommodation, c
 - Publishing a plan twice does not duplicate the plan or its notification.
 
 #### FR-34: Record daily treatments given
-Staff can record treatments actually given on a day. Realizes UJ-2.
+Staff can record treatments actually given on a day. Realizes UJ-6.
+
+**Consequences (testable):**
+- A record stores the treatment, therapist name, duration and notes for one date.
+- A treatment given can differ from the one planned, and both are kept.
 
 #### FR-35: Patient day view
 A Patient can see the Published Day Plan's schedule and diet, and the current medicines, with a way to tick medicines taken. Realizes UJ-2.
@@ -359,7 +409,7 @@ A Patient can see the Published Day Plan's schedule and diet, and the current me
 A Patient can answer a daily Check-in about whether medicines were taken and how the treatment is going. `[ASSUMPTION: five questions as a default; the questions are a Clinic Setting.]` Realizes UJ-3.
 
 **Consequences (testable):**
-- Medicines answer is yes, partly or no; scores are 1 to 5; free text is limited to 1,000 characters.
+- Medicines answer is yes, partly or no; scores are 1 to 5; free text is limited to 1,000 characters. `[ASSUMPTION: these answer formats and limits.]`
 - Submitting twice for the same day does not create two Check-ins.
 - The Patient sees confirmation that the Check-in was received.
 
@@ -371,7 +421,7 @@ Doctor can open a Review Queue of Check-ins, Flagged first, with the reason for 
 - The Doctor sees only Check-ins of their Clinic.
 
 #### FR-38: Sample Flag Rules
-The system can raise a Flag on a Check-in using Flag Rules from Clinic Settings. The prototype ships a Sample Flag Rule set, labelled "sample, not clinical". Realizes UJ-3.
+The system can raise a Flag on a Check-in using Flag Rules from Clinic Settings. The prototype ships a Sample Flag Rule set, labelled "sample, not clinical". `[ASSUMPTION: sample rules exist only so the demo can show a queue; the real rules come from the Doctor, PK-09.]` Realizes UJ-3.
 
 **Consequences (testable):**
 - Changing a Flag Rule in Clinic Settings changes which Check-ins are Flagged, without a code change.
@@ -389,7 +439,10 @@ Doctor can add a Note, change a medicine and mark a Check-in reviewed from the s
 **Functional Requirements:**
 
 #### FR-40: Log departure assistance
-Staff can log departure travel assistance.
+Staff can log departure travel assistance. Realizes UJ-6.
+
+**Consequences (testable):**
+- An entry stores date, what was arranged and who arranged it, against the Episode.
 
 #### FR-41: Schedule follow-up Check-ins
 Staff can schedule follow-up Check-ins for a Patient, which appear to the Patient at the scheduled time in the Patient's time zone. Realizes UJ-4.
@@ -405,7 +458,11 @@ A Patient can report how they feel, confirm medicines taken and flag diet issues
 - The answer enters the Review Queue like a care Check-in.
 
 #### FR-43: Log Consultations
-Doctor and Staff can log WhatsApp and phone Consultations given after the Patient is home, with date, channel and summary.
+Doctor or Coordinator can log WhatsApp and phone Consultations given after the Patient is home, with date, channel and summary.
+
+**Consequences (testable):**
+- A logged Consultation appears in the Patient's Episode history in date order.
+- Channel is one of WhatsApp call, WhatsApp video, phone, video or other.
 
 #### FR-44: Request an extra Consultation
 A Patient can request an extra Consultation with a preferred time and reason, and Staff can approve or decline it. Realizes UJ-4.
@@ -429,7 +486,27 @@ A user can see their notifications in an in-app inbox, such as a Published Day P
 The system can send email notifications for the same events. In the prototype delivery uses a development mail setup. Provider and sending domain are configured later.
 
 **Consequences (testable):**
-- A failed send is recorded and retried; the in-app notification still exists.
+- A failed send is recorded and retried. `[ASSUMPTION: up to three attempts with increasing delay.]`
+- The in-app Notification still exists after a failed send.
+
+### 4.9 Prototype foundations
+**Description:** Two supports the journeys depend on: the Patient's time zone and a repeatable demo seed.
+
+**Functional Requirements:**
+
+#### FR-47: Patient time zone
+Staff can record a Patient's time zone, and the system displays that Patient's flight, Check-in and reminder times in it. Realizes UJ-4.
+
+**Consequences (testable):**
+- A time entered for a Patient in a different time zone from the viewer shows correctly in each viewer's local time.
+- A new Patient defaults to the Clinic's time zone until set. `[ASSUMPTION: default to the Clinic's time zone.]`
+
+#### FR-48: Demo seed
+The system can load a clean demo data set of invented Patients, Staff and two Clinics, covering all six Phases, so UJ-1 to UJ-6 and the isolation suite can be run from a clean start. Realizes UJ-1 to UJ-6.
+
+**Consequences (testable):**
+- Loading the seed twice leaves the same data, not duplicates.
+- Every seeded name, email, phone and passport number is invented, and the seed is the only place such data lives.
 
 ## 5. Non-Goals (Explicit)
 - Not a replacement for first contact on WhatsApp, email and phone.
@@ -456,7 +533,7 @@ An end-to-end working prototype of the six Phases on invented data: access, role
 ## 7. Success Metrics
 
 **Primary**
-- **SM-1**: Demo journey completion. A person can walk UJ-1 to UJ-5 on a deployed build from a clean seed, without editing the database by hand. Target: 5 of 5 journeys completed. Validates FR-1 to FR-46.
+- **SM-1**: Demo journey completion. A person can walk UJ-1 to UJ-6 on a deployed build from a clean seed, without editing the database by hand. Target: 6 of 6 journeys completed. This is wider than the brief's single demo journey, because the PRD covers all six Phases. Validates FR-1 to FR-48.
 - **SM-2**: Isolation coverage. The isolation suite covers every clinic-owned table and the document store, and passes. Target: 100% of tables listed, 0 cross-patient or cross-clinic reads or writes succeed. Validates FR-4, FR-5, FR-6.
 
 **Secondary**
@@ -494,10 +571,17 @@ An end-to-end working prototype of the six Phases on invented data: access, role
 9. What is the sending domain and email provider setup for pilot? Deferred. (PK-22)
 
 ## 10. Assumptions Index
+Every `[ASSUMPTION]` in the document, for explicit confirmation:
+- Glossary, Doctor and FR-8: the Doctor owns Check-in questions and Flag Rules; Admin owns branding, terminology and users.
+- Role table (section 4.1): the capability split by role.
+- FR-2: link and code expire after one hour; 60-second re-request window.
 - FR-16: the Consent step uses sample wording labelled "not legal text".
 - FR-17: HEIC is accepted and converted to JPEG; method decided at architecture.
-- FR-36: five Check-in questions by default; configurable per Clinic.
+- FR-25: flight number format check.
+- FR-36: five Check-in questions by default; answer formats and limits.
 - FR-38: Sample Flag Rules exist only so the demo can show a queue.
-- Section 6.1: clinic home, patient home, Documents tab, episodes and phase moves are in because the journey cannot be walked without them.
+- FR-46: up to three send attempts with increasing delay.
+- FR-47: a new Patient defaults to the Clinic's time zone.
+- Section 6.1: clinic home, patient home, Documents tab, Episodes and phase moves are in because the journey cannot be walked without them.
 - Section 6.2: the audit log and MFA are deferred to the gate before real data.
 - Section 8: the core-versus-customizable split in the addendum is a draft.
