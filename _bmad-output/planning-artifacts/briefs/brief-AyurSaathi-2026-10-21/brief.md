@@ -51,9 +51,11 @@ Short data entry for staff and ease of use for older patients are deliberately o
 
 ## Scope
 
-**In (prototype):** sign-in and roles, clinic isolation, patient record and episodes, onboarding with documents and consent step, arrival (flight, pickup, stay), care (daily plan, patient day view, check-in, doctor review), basic enquiry, assessment and follow-up logging as time allows. English only. Email and in-app notifications only.
+**In (prototype):** an end-to-end working prototype of the whole journey, built on invented data: sign-in and roles, clinic isolation, patient record and episodes, onboarding with documents and the consent step, enquiry and quotation log, assessment log, planning, arrival (flight, pickup, stay), care (daily plan, patient day view, check-in, doctor review) and continuity (follow-up check-ins, consultation log). Each phase works at a simple level so the journey can be walked from start to finish. English only.
 
-**Out:** real patient data; rollout to users; WhatsApp sending; web push; online payments (payments are only recorded); native apps; therapist, kitchen and attendant logins; return-visit nudges; running other clinics; national health-record integration; any automated clinical advice.
+**Later (not prototype work):** finer details within each phase, WhatsApp setup, and email provider configuration with a verified domain. Until then, sign-in links and notifications use a development mail setup or appear in the app.
+
+**Out:** real patient data; rollout to users; online payments (payments are only recorded); native apps; web push; therapist, kitchen and attendant logins; return-visit nudges; running other clinics; national health-record integration; any automated clinical advice.
 
 ## Dependencies and Risks
 
