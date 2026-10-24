@@ -27,3 +27,6 @@ Foundation, then Arrival and Care, then Enquiry, Assessment and Planning, then C
 
 ## Source of decisions
 `docs/parked-decisions.md` Part A (items marked Resolved).
+
+## Tenancy decision (architecture, 2026-10-24, owner)
+Deployment per clinic: one Supabase project and one Vercel deployment per clinic, same codebase. Tables still carry `clinic_id` and every policy checks it. FR-4, FR-6 and FR-48 stand: the isolation suite seeds two Clinic rows in one database and proves the policies, which keeps pooling clinics later possible.
