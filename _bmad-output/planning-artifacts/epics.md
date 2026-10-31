@@ -1,6 +1,6 @@
 ---
 status: draft
-stepsCompleted: []
+stepsCompleted: ['step-01-validate-prerequisites']
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/prd.md
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/addendum.md
