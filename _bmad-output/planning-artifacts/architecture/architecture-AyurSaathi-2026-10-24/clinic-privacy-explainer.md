@@ -1,13 +1,13 @@
 ---
 title: "How AyurSaathi keeps patient information private"
 audience: "Ayurvedgram clinic owner, doctors and coordinators (non-technical)"
-status: draft
+status: final
 created: 2026-10-31
 ---
 
 # How AyurSaathi keeps patient information private
 
-*A plain-language summary for the clinic. It describes the prototype's design, not a finished product. It is not legal advice, and the prototype uses invented patients only.*
+*A plain-language summary for the clinic (version 2, after independent security review). It describes the prototype's design, not a finished product. It is not legal advice, and the prototype uses invented patients only.*
 
 ## The short version
 
@@ -35,15 +35,15 @@ Every clinic gets its **own separate system** (its own database and its own copy
 
 ## How patients sign in
 
-Patients do not need a password. They receive an email with a link, and a code they can type if the link does not work. Staff sign in with an email and password.
+Patients do not need a password. They receive an email with a link, and a code they can type if the link does not work. An invite can only open the account it was made for, and it cannot be used to gain extra permissions. Staff sign in with an email and password. If a staff member's role is removed, their access ends within minutes.
 
 ## Files and passports
 
-Uploaded files, such as passport scans and medical records, are kept in private storage. A file opens only through a short-lived link created for a signed-in person who is allowed to see it.
+Uploaded files, such as passport scans and medical records, are kept in private storage. A file opens only through a link created at the moment of the click for a signed-in person who is allowed to see it. The link stops working after about a minute. Staff-only files never reach a patient.
 
 ## How we check this works
 
-The prototype comes with automated tests that try to break these rules. They sign in as one patient and try to read another's record, and they sign in as one clinic and try to reach another's. The build does not pass if any table or file store has no such test.
+The prototype comes with automated tests that try to break these rules. They sign in as one patient and try to read another's record, and they sign in as one clinic and try to reach another's. The build does not pass if any table, view, function or file store has no such test.
 
 ## What is not in the prototype yet
 
