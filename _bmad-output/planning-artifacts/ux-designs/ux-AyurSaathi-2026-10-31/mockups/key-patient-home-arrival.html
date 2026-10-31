@@ -1,0 +1,55 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Patient Home, arrival day</title><style>
+/* Governing spines: DESIGN.md (all tokens) and EXPERIENCE.md. Screen: EXPERIENCE.md Information Architecture (Patient Home), Component Patterns (Journey bar, Bottom bar), State Patterns (Not yet entered), Key Flow 1. Invented data only. */
+:root{--base:#FBF8F2;--raised:#FFFFFF;--sunken:#F1ECE2;--ink:#1D2A2B;--ink2:#4A5A5B;--bstrong:#8C8574;--bhair:#D9D2C3;
+--primary:#17575A;--onprimary:#FFFFFF;--hl:#F2B63D;--pos:#1F6B3A;--cau:#7A4F00;--crit:#A32A2A;--info:#1F4F8F;
+--p1:#E6E4DE;--p2:#D6E4F5;--p3:#F5E6BC;--p4:#F4D6C6;--p5:#D3EBD3;--p6:#CBE9E8}
+@media (prefers-color-scheme:dark){:root{--base:#101A1B;--raised:#17262A;--sunken:#0B1314;--ink:#EDF2F0;--ink2:#B5C3C1;--bstrong:#5F7273;--bhair:#2A3B3E;
+--primary:#6CC5C0;--onprimary:#08201F;--pos:#7DD39A;--cau:#F2C46B;--crit:#FF9A9A;--info:#9CC2FF}}
+*{box-sizing:border-box}body{margin:0;background:#cfc9bb;font-family:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif;color:var(--ink);padding:24px;display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.cap{font-size:14px;color:#2b2b2b;max-width:360px;margin:0 0 8px}
+.phone{width:390px;background:var(--base);border-radius:28px;border:8px solid #1d2a2b;overflow:hidden;display:flex;flex-direction:column;min-height:780px;position:relative}
+.laptop{width:1180px;background:var(--base);border-radius:12px;border:8px solid #1d2a2b;overflow:hidden;min-height:700px;display:flex;flex-direction:column}
+.ribbon{background:var(--hl);color:#1D2A2B;font-size:14px;line-height:20px;text-align:center;padding:2px 8px}
+h1,h2{font-family:"Source Serif 4",Georgia,serif;margin:0}
+h1{font-size:32px;line-height:40px;font-weight:600}h2{font-size:24px;line-height:32px;font-weight:600}
+h3{font-size:20px;line-height:28px;font-weight:700;margin:0}
+p{margin:0}.body{font-size:18px;line-height:28px}.st{font-size:16px;line-height:24px}.meta{font-size:14px;line-height:20px;color:var(--ink2)}
+.main{padding:16px;display:flex;flex-direction:column;gap:16px;flex:1}
+.card{background:var(--raised);border:1px solid var(--bhair);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--onprimary);border-radius:12px;min-height:56px;font-weight:700;font-size:16px;line-height:24px;padding:0 16px;text-align:center}
+.btn.s{min-height:48px}.btn.sec{background:var(--raised);color:var(--primary);border:2px solid var(--primary)}
+.chip{display:inline-flex;gap:6px;align-items:center;border-radius:9999px;padding:2px 12px;font-weight:700;font-size:14px;line-height:24px;color:#1D2A2B}
+.c1{background:var(--p1)}.c2{background:var(--p2)}.c3{background:var(--p3)}.c4{background:var(--p4)}.c5{background:var(--p5)}.c6{background:var(--p6)}
+.badge{display:inline-flex;gap:6px;align-items:center;border-radius:8px;padding:2px 8px;font-weight:700;font-size:14px;line-height:20px;border:1px solid currentColor}
+.b-pos{color:var(--pos)}.b-cau{color:var(--cau)}.b-crit{color:var(--crit)}.b-info{color:var(--info)}
+.bar{display:flex;border-top:1px solid var(--bhair);background:var(--raised);box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+.bar div{flex:1;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;line-height:20px;position:relative}
+.bar div.on{font-weight:700;color:var(--primary)}.bar div.on:before{content:"";position:absolute;top:0;left:20%;right:20%;height:4px;background:var(--primary);border-radius:0 0 4px 4px}
+.ico{width:24px;height:24px;border:2px solid currentColor;border-radius:6px;display:inline-block}
+.seg{display:flex;gap:4px}.seg i{flex:1;height:8px;border-radius:4px;background:var(--bhair)}.seg i.d{background:var(--primary)}.seg i.n{background:var(--hl);outline:2px solid var(--primary)}
+.row{display:flex;gap:12px;align-items:center}.sp{justify-content:space-between}
+.kv{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--bhair);padding-top:8px;font-size:18px;line-height:28px}
+.kv b{font-weight:700}
+.side{width:240px;background:var(--raised);border-right:1px solid var(--bhair);padding:16px;display:flex;flex-direction:column;gap:4px}
+.side div{padding:10px 12px;border-radius:8px;font-size:16px;min-height:48px;display:flex;align-items:center}
+.side div.on{background:var(--sunken);font-weight:700;color:var(--primary);border-left:4px solid var(--primary)}
+.opt{display:flex;align-items:center;min-height:56px;border:2px solid var(--bstrong);border-radius:12px;padding:0 16px;background:var(--raised);font-size:18px;font-weight:700}
+.opt.on{border-color:var(--primary);outline:2px solid var(--primary)}
+table{border-collapse:collapse;width:100%;font-size:16px;line-height:24px}th{text-align:left;font-weight:700;color:var(--ink2);padding:8px;border-bottom:2px solid var(--bhair)}td{padding:10px 8px;border-bottom:1px solid var(--bhair);vertical-align:middle}
+</style></head><body><div><p class='cap'>Patient Home on arrival day (UJ-1). Journey bar, arrival-day card, a missing detail shown as "Not yet confirmed", landed and help actions.</p>
+<div class='phone'><div class='ribbon'>Demo data. Not real patients.</div><div class='main'>
+<div class='row sp'><div><p class='meta'>Hello, Anna</p><h1>Arrival day</h1></div></div>
+<div class='card'><p class='st'><b>Step 4 of 6, Arrival</b> <span class='chip c4'>4 Arrival &middot; Now</span></p>
+<div class='seg'><i class='d'></i><i class='d'></i><i class='d'></i><i class='n'></i><i></i><i></i></div></div>
+<div class='card'><h3>Today: arriving in Pune</h3>
+<div class='kv'><span>Flight</span><b>LX 148</b></div>
+<div class='kv'><span>Lands</span><b>Thu 12 Nov, 14:35 CET <span class='meta'>(Pune 19:05)</span></b></div>
+<div class='kv'><span>Meeting you</span><b>Ramesh Patil, grey Innova, MH 12 AB 1234</b></div>
+<div class='kv'><span>Staying at</span><b>Garden Wing, room 14 &middot; check-in from 20:00</b></div>
+<div class='kv'><span>Driver&rsquo;s phone</span><span class='badge b-cau'>&#9888; Not yet confirmed</span></div>
+<div class='btn sec'>Change flight details</div></div>
+<div class='card'><p class='st'>Landed in Pune?</p><div class='btn'>I have landed</div>
+<div class='btn sec'>I need help with my pickup</div>
+<p class='meta'>This tells your coordinator. For a medical emergency, call your local emergency number. Clinic: +91 20 5555 0100.</p></div>
+<div class='card'><h3>Updates</h3><p class='st'><span class='badge b-info'>New</span> Your pickup details were added.</p><p class='meta'>Wed 11 Nov, 17:42 CET</p></div>
+</div><div class='bar'><div class='on'><span class='ico'></span>Home</div><div class=''><span class='ico'></span>Plan</div><div class=''><span class='ico'></span>Documents</div><div class=''><span class='ico'></span>Check-in</div></div></div></div></body></html>

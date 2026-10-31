@@ -1,7 +1,7 @@
 ---
 name: AyurSaathi
 description: Calm, legible companion for an Ayurvedic clinic's international patients and its staff. Warm paper surfaces, one teal action colour, large type, status always in words.
-status: draft
+status: final
 updated: 2026-10-31
 colors:
   surface-base: '#FBF8F2'

@@ -37,18 +37,18 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 
 ### 2.3 Key User Journeys
 
-- **UJ-1. Anna opens her invite and sees her arrival.**
-  - **Persona + context:** Anna, in her sixties, from Austria, not very technical, travelling to Pune for treatment. She has accepted a quotation by WhatsApp.
-  - **Entry state:** Not signed in. On her phone, from an email.
-  - **Path:** opens the invite link; if the link fails she types the code shown on the same screen; lands on the patient home with the six-step journey bar and a card for today; adds her flight number and arrival time; sees the car, driver and stay details the clinic has entered.
-  - **Climax:** the arrival-day card shows her flight, who meets her and where she stays, in one place.
-  - **Resolution:** on landing she taps "I have landed". The coordinator sees the alert.
+- **UJ-1. Anna opens the invite and sees the arrival details.**
+  - **Persona + context:** Anna, in their sixties, from Austria, not very technical, travelling to Pune for treatment. Anna has accepted a quotation by WhatsApp.
+  - **Entry state:** Not signed in. On their phone, from an email.
+  - **Path:** opens the invite link; if the link fails Anna types the code shown on the same screen; lands on the patient home with the six-step journey bar and a card for today; adds the flight number and arrival time; sees the car, driver and stay details the clinic has entered.
+  - **Climax:** the arrival-day card shows the flight, who meets Anna and where Anna stays, in one place.
+  - **Resolution:** on landing Anna taps "I have landed". The coordinator sees the alert.
   - **Edge case:** the link was opened by a mail scanner first and no longer works. Anna types the code instead and is signed in.
 
 - **UJ-2. Meera onboards a patient and publishes tomorrow's plan.**
-  - **Persona + context:** Meera, coordinator, on her phone between other tasks.
+  - **Persona + context:** Meera, coordinator, on a phone between other tasks.
   - **Entry state:** Signed in as coordinator, in the clinic area.
-  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; she saves a draft when interrupted and resumes; uploads a passport photo from her phone; submits and the invite is sent. During care she opens a Patient's Day Plan, copies yesterday's Day Plan, changes two items and publishes it.
+  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; Meera saves a draft when interrupted and resumes; uploads a passport photo from a phone; submits and the invite is sent. During care Meera opens a Patient's Day Plan, copies yesterday's Day Plan, changes two items and publishes it.
   - **Climax:** the patient's day view updates and the patient is notified.
   - **Resolution:** the plan shows as published with a time. Tomorrow starts from this plan.
   - **Edge case:** a patient with the same email already exists. The app warns and offers to open that record.
@@ -57,17 +57,17 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
   - **Persona + context:** Dr. A, on a laptop or phone, at the start of the day.
   - **Entry state:** Signed in as doctor.
   - **Path:** opens the Review Queue; flagged check-ins appear first with the reason; opens one, reads the answers, adds a note marked Shared or Staff-only, adjusts a medicine, marks the check-in reviewed.
-  - **Climax:** the patient sees the shared note and the changed medicine on her next visit to the day view.
+  - **Climax:** the patient sees the shared note and the changed medicine on the patient's next visit to the day view.
   - **Resolution:** the check-in leaves the queue. The Staff-only Note is visible only to Staff.
   - **Edge case:** the sample flag rule marks too many check-ins. Dr. A changes the rule in settings.
 
 - **UJ-4. Anna, back home, answers a follow-up and asks for a call.**
   - **Persona + context:** Anna, two weeks after departure.
   - **Entry state:** Signed in by emailed link or code.
-  - **Path:** sees a clinic-scheduled follow-up check-in; confirms the medicine, rates how she feels and flags a diet issue; submits; then requests an extra consultation with a preferred time.
+  - **Path:** sees a clinic-scheduled follow-up check-in; confirms the medicine, rates how they feel and flags a diet issue; submits; then requests an extra consultation with a preferred time.
   - **Climax:** the app confirms the check-in was received.
   - **Resolution:** the coordinator approves the request and logs the consultation after it takes place.
-  - **Edge case:** she is in a different time zone. Times show in her local time.
+  - **Edge case:** Anna is in a different time zone. Times show in the patient's local time.
 
 - **UJ-5. Marc returns for a second visit.**
   - **Persona + context:** Marc, treated last year, returning.
@@ -79,7 +79,7 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **UJ-6. Meera and Dr. A record the journey before and after treatment.**
   - **Persona + context:** Meera, coordinator, and Dr. A, in the days around Anna's visit.
   - **Entry state:** Signed in; Anna's Episode is in Enquiry.
-  - **Path:** Meera logs the WhatsApp enquiry and the first Quotation; Dr. A logs the assessment call and its outcome; Meera records the Programme and the deposit received; after Anna's care, Meera records treatments given and logs her departure assistance.
+  - **Path:** Meera logs the WhatsApp enquiry and the first Quotation; Dr. A logs the assessment call and its outcome; Meera records the Programme and the deposit received; after Anna's care, Meera records treatments given and logs the departure assistance.
   - **Climax:** Anna's whole history sits in one record.
   - **Resolution:** each step moves the Episode to the next Phase.
 

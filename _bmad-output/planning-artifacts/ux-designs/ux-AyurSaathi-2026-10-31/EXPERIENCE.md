@@ -1,6 +1,6 @@
 ---
 name: AyurSaathi
-status: draft
+status: final
 sources:
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/prd.md
   - _bmad-output/planning-artifacts/architecture/architecture-AyurSaathi-2026-10-24/ARCHITECTURE-SPINE.md
@@ -59,6 +59,8 @@ A responsive web app, installable to the phone home screen, with three areas in 
 | Settings: Clinic | More, Settings | Branding and terminology (Admin) | FR-8 |
 | Settings: Clinical rules | More, Settings | Check-in questions and Flag Rules, labelled "Sample" (Doctor) | FR-8, 36, 38 |
 | Settings: People | More, Settings | Staff users and roles (Admin) | FR-3 |
+
+→ Composition references (spines win on conflict): `mockups/key-patient-home-arrival.html`, `mockups/key-patient-checkin.html`, `mockups/key-clinic-today-laptop.html`, `mockups/key-doctor-review-phone.html`.
 
 **Closure.** Every PRD requirement above maps to a surface; every surface is reached from a journey (UJ-1 to UJ-6, Key Flows below). Consultations logged after contact (FR-43) live on Record: After; Payments (FR-24) on Record: Before arrival.
 
@@ -184,15 +186,15 @@ The app records and alerts; it never advises (BR-06).
 
 ## Key Flows
 
-### Flow 1 — Anna opens her invite and sees her arrival (UJ-1)
+### Flow 1 — Anna opens the invite and sees the arrival details (UJ-1)
 
-1. Anna taps the link in the Invite email on her phone.
-2. The Redeem page says "Open your AyurSaathi account" with one button. She presses it.
+1. Anna taps the link in the Invite email on a phone.
+2. The Redeem page says "Open your AyurSaathi account" with one button. Anna presses it.
 3. Home opens with "Step 4 of 6, Arrival" and the arrival-day card.
-4. The card shows "Flight: Not yet confirmed". She taps "Add flight", types "LX 148" and the arrival time, and saves.
-5. The card now shows her flight in her own time zone with the Pune time in brackets, the car and driver, and where she stays.
-6. After landing she taps "I have landed". The screen says "Thank you. Your coordinator has been told." and shows the clinic phone.
-7. **Climax:** the arrival-day card shows who meets her and where, in one place, and the landed confirmation proves the clinic knows.
+4. The card shows "Flight: Not yet confirmed". Anna taps "Add flight", types "LX 148" and the arrival time, and saves.
+5. The card now shows the flight in Anna's own time zone with the Pune time in brackets, the car and driver, and where Anna stays.
+6. After landing Anna taps "I have landed". The screen says "Thank you. Your coordinator has been told." and shows the clinic phone.
+7. **Climax:** the arrival-day card shows who meets Anna and where, in one place, and the landed confirmation proves the clinic knows.
 
 Failure: the mail scanner already opened the link. Redeem still works because the link needs a button press; if the link has expired, the sign-in screen offers the code (Foundation, State Patterns).
 
@@ -200,40 +202,40 @@ Failure: the mail scanner already opened the link. Redeem still works because th
 
 1. Meera taps Patients, then "Add patient".
 2. Step 1: name, email, phone, nationality. The duplicate check runs on blur.
-3. Step 2: the sample consent text with its Sample badge; she records that the patient agreed.
-4. Step 3: she photographs the passport; the uploader shows "Preparing photo…" then the file with Staff-only selected.
+3. Step 2: the sample consent text with its Sample badge; Meera records that the patient agreed.
+4. Step 3: Meera photographs the passport; the uploader shows "Preparing photo…" then the file with Staff-only selected.
 5. Step 4: review, "Send invite". The record opens on Overview with the Invite status "Sent".
-6. Later, in the Care tab she opens Day Plan, picks tomorrow, taps "Copy yesterday", changes two items, and taps "Publish to patient".
+6. Later, in the Care tab Meera opens Day Plan, picks tomorrow, taps "Copy yesterday", changes two items, and taps "Publish to patient".
 7. **Climax:** the badge changes to "Published at 17:42" and the confirmation names the patient.
 
-Failure: a duplicate email. The warning shows the existing record with "Open that record"; Meera does not lose what she typed.
+Failure: a duplicate email. The warning shows the existing record with "Open that record"; Meera does not lose what was typed.
 
 ### Flow 3 — Dr. A reviews the morning's check-ins (UJ-3)
 
 1. Dr. A opens Review (phone) or the Review Queue (laptop).
 2. Flagged check-ins are listed first, each with the rule in words.
-3. She opens one, reads the answers and the recent notes.
-4. She adds a Note, chooses Shared with patient, changes a medicine's dose, and taps "Mark reviewed".
+3. Dr. A opens one and reads the answers and the recent notes.
+4. Dr. A adds a Note, chooses Shared with patient, changes a medicine's dose, and taps "Mark reviewed".
 5. **Climax:** the row leaves the queue and the Today count drops; the patient will see the Shared note and the changed medicine.
 
-Failure: the sample rules flag too many. She opens Settings, Clinical rules, edits the rule, and the queue re-sorts on the next evaluation.
+Failure: the sample rules flag too many. Dr. A opens Settings, Clinical rules, edits the rule, and the queue re-sorts on the next evaluation.
 
 ### Flow 4 — Anna, back home, answers a follow-up and asks for a call (UJ-4)
 
 1. Anna signs in with the emailed link; the Check-in tab shows "Your follow-up check-in".
-2. Five one-question screens: medicines (Yes, Partly, No), how she feels, diet, free text.
-3. A review screen; she taps "Send".
+2. Five one-question screens: medicines (Yes, Partly, No), how they feel, diet, free text.
+3. A review screen; Anna taps "Send".
 4. **Climax:** "Received. Your doctor reviews check-ins each day." with the clinic phone line.
-5. From Home she taps "Request a consultation", picks a time and gives a reason. Her request shows "Waiting for the clinic".
+5. From Home Anna taps "Request a consultation", picks a time and gives a reason. The request shows "Waiting for the clinic".
 6. The coordinator approves it; the status becomes "Approved for Thursday 19 Nov, 16:00 your time".
 
-Failure: she is in a different time zone. Every time shows her local time with the Pune time in brackets.
+Failure: Anna is in a different time zone. Every time shows Anna's local time with the Pune time in brackets.
 
 ### Flow 5 — Marc returns for a second visit (UJ-5)
 
 1. The coordinator searches "Marc" in Patients and opens the record.
-2. On Overview she taps "Start new episode" and chooses Assessment or Planning.
-3. **Climax:** the record keeps his details and documents; nothing is re-entered, and the first episode is still visible as closed.
+2. On Overview the coordinator taps "Start new episode" and chooses Assessment or Planning.
+3. **Climax:** the record keeps Marc's details and documents; nothing is re-entered, and the first episode is still visible as closed.
 
 ### Flow 6 — Meera and Dr. A record the journey (UJ-6)
 

@@ -1,0 +1,50 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Clinic Today, laptop</title><style>
+/* Governing spines: DESIGN.md (all tokens) and EXPERIENCE.md. Screen: EXPERIENCE.md Information Architecture (Today, Patients), Component Patterns (Sidebar, Alert row, Patient list row), Responsive & Platform (1024px and up). Invented data only. */
+:root{--base:#FBF8F2;--raised:#FFFFFF;--sunken:#F1ECE2;--ink:#1D2A2B;--ink2:#4A5A5B;--bstrong:#8C8574;--bhair:#D9D2C3;
+--primary:#17575A;--onprimary:#FFFFFF;--hl:#F2B63D;--pos:#1F6B3A;--cau:#7A4F00;--crit:#A32A2A;--info:#1F4F8F;
+--p1:#E6E4DE;--p2:#D6E4F5;--p3:#F5E6BC;--p4:#F4D6C6;--p5:#D3EBD3;--p6:#CBE9E8}
+@media (prefers-color-scheme:dark){:root{--base:#101A1B;--raised:#17262A;--sunken:#0B1314;--ink:#EDF2F0;--ink2:#B5C3C1;--bstrong:#5F7273;--bhair:#2A3B3E;
+--primary:#6CC5C0;--onprimary:#08201F;--pos:#7DD39A;--cau:#F2C46B;--crit:#FF9A9A;--info:#9CC2FF}}
+*{box-sizing:border-box}body{margin:0;background:#cfc9bb;font-family:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,sans-serif;color:var(--ink);padding:24px;display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap}
+.cap{font-size:14px;color:#2b2b2b;max-width:360px;margin:0 0 8px}
+.phone{width:390px;background:var(--base);border-radius:28px;border:8px solid #1d2a2b;overflow:hidden;display:flex;flex-direction:column;min-height:780px;position:relative}
+.laptop{width:1180px;background:var(--base);border-radius:12px;border:8px solid #1d2a2b;overflow:hidden;min-height:700px;display:flex;flex-direction:column}
+.ribbon{background:var(--hl);color:#1D2A2B;font-size:14px;line-height:20px;text-align:center;padding:2px 8px}
+h1,h2{font-family:"Source Serif 4",Georgia,serif;margin:0}
+h1{font-size:32px;line-height:40px;font-weight:600}h2{font-size:24px;line-height:32px;font-weight:600}
+h3{font-size:20px;line-height:28px;font-weight:700;margin:0}
+p{margin:0}.body{font-size:18px;line-height:28px}.st{font-size:16px;line-height:24px}.meta{font-size:14px;line-height:20px;color:var(--ink2)}
+.main{padding:16px;display:flex;flex-direction:column;gap:16px;flex:1}
+.card{background:var(--raised);border:1px solid var(--bhair);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--onprimary);border-radius:12px;min-height:56px;font-weight:700;font-size:16px;line-height:24px;padding:0 16px;text-align:center}
+.btn.s{min-height:48px}.btn.sec{background:var(--raised);color:var(--primary);border:2px solid var(--primary)}
+.chip{display:inline-flex;gap:6px;align-items:center;border-radius:9999px;padding:2px 12px;font-weight:700;font-size:14px;line-height:24px;color:#1D2A2B}
+.c1{background:var(--p1)}.c2{background:var(--p2)}.c3{background:var(--p3)}.c4{background:var(--p4)}.c5{background:var(--p5)}.c6{background:var(--p6)}
+.badge{display:inline-flex;gap:6px;align-items:center;border-radius:8px;padding:2px 8px;font-weight:700;font-size:14px;line-height:20px;border:1px solid currentColor}
+.b-pos{color:var(--pos)}.b-cau{color:var(--cau)}.b-crit{color:var(--crit)}.b-info{color:var(--info)}
+.bar{display:flex;border-top:1px solid var(--bhair);background:var(--raised);box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+.bar div{flex:1;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;line-height:20px;position:relative}
+.bar div.on{font-weight:700;color:var(--primary)}.bar div.on:before{content:"";position:absolute;top:0;left:20%;right:20%;height:4px;background:var(--primary);border-radius:0 0 4px 4px}
+.ico{width:24px;height:24px;border:2px solid currentColor;border-radius:6px;display:inline-block}
+.seg{display:flex;gap:4px}.seg i{flex:1;height:8px;border-radius:4px;background:var(--bhair)}.seg i.d{background:var(--primary)}.seg i.n{background:var(--hl);outline:2px solid var(--primary)}
+.row{display:flex;gap:12px;align-items:center}.sp{justify-content:space-between}
+.kv{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--bhair);padding-top:8px;font-size:18px;line-height:28px}
+.kv b{font-weight:700}
+.side{width:240px;background:var(--raised);border-right:1px solid var(--bhair);padding:16px;display:flex;flex-direction:column;gap:4px}
+.side div{padding:10px 12px;border-radius:8px;font-size:16px;min-height:48px;display:flex;align-items:center}
+.side div.on{background:var(--sunken);font-weight:700;color:var(--primary);border-left:4px solid var(--primary)}
+.opt{display:flex;align-items:center;min-height:56px;border:2px solid var(--bstrong);border-radius:12px;padding:0 16px;background:var(--raised);font-size:18px;font-weight:700}
+.opt.on{border-color:var(--primary);outline:2px solid var(--primary)}
+table{border-collapse:collapse;width:100%;font-size:16px;line-height:24px}th{text-align:left;font-weight:700;color:var(--ink2);padding:8px;border-bottom:2px solid var(--bhair)}td{padding:10px 8px;border-bottom:1px solid var(--bhair);vertical-align:middle}
+</style></head><body><div><p class='cap'>Clinic Today on a laptop (UJ-2, UJ-3). Sidebar, alerts first, then the Patients list with phase chip and one status badge each.</p>
+<div class='laptop'><div class='ribbon'>Demo data. Not real patients.</div><div style='display:flex;flex:1'>
+<div class='side'><p class='meta' style='padding:0 12px 8px'>Ayurvedgram (demo)</p><div class='on'>Today</div><div>Patients</div><div>Review</div><div>Plans</div><div>More</div></div>
+<div class='main' style='padding:24px;gap:24px'>
+<div class='row sp'><h1>Today</h1><div class='btn s' style='min-width:160px'>Add patient</div></div>
+<div class='card'><h3>Needs attention (3)</h3>
+<table><tr><td><span class='badge b-crit'>&#9888; Needs review</span></td><td>Marc Dubois: check-in flagged. Medicines: No</td><td>08:40</td><td><span class='btn s'>Open</span></td></tr>
+<tr><td><span class='badge b-info'>&#9679; Landed</span></td><td>Anna Weber: &ldquo;I have landed&rdquo;</td><td>19:12</td><td><span class='btn s'>Open</span></td></tr>
+<tr><td><span class='badge b-cau'>&#9888; Request</span></td><td>Ingrid Larsen asked for a consultation</td><td>Yesterday</td><td><span class='btn s'>Open</span></td></tr></table></div>
+<div class='card'><div class='row sp'><h3>Patients</h3><span class='meta'>Filter: All phases &middot; Search: press /</span></div>
+<table><tr><th>Patient</th><th>Phase</th><th>Status</th><th>Detail</th></tr><tr><td><b>Anna Weber</b><br><span class='meta'>Austria</span></td><td><span class='chip c4'>4 Arrival</span></td><td><span class='badge b-info'>&#9679; Arriving today</span></td><td>Lands 19:05</td></tr><tr><td><b>Marc Dubois</b><br><span class='meta'>France</span></td><td><span class='chip c5'>5 Care</span></td><td><span class='badge b-crit'>&#9888; Needs review</span></td><td>Medicines: No</td></tr><tr><td><b>Ingrid Larsen</b><br><span class='meta'>Norway</span></td><td><span class='chip c5'>5 Care</span></td><td><span class='badge b-pos'>&#10003; Nothing due</span></td><td>Plan published</td></tr><tr><td><b>Tomas Novak</b><br><span class='meta'>Czechia</span></td><td><span class='chip c3'>3 Planning</span></td><td><span class='badge b-cau'>&#9888; Not yet confirmed</span></td><td>Flight missing</td></tr></table></div>
+</div></div></div></div></body></html>
