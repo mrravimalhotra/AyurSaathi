@@ -1173,4 +1173,207 @@ So that the walking skeleton is proven working, not assumed.
 **When** Ravi follows it on a phone and a laptop
 **Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
 
+## Epic 5: Plan and patient day
+
+The Doctor records findings, notes and medicines. The coordinator builds, copies and publishes the Day Plan and records treatments given. The patient sees the schedule and diet, and ticks medicines taken. Covers FR-31, FR-32, FR-33, FR-34, FR-35. The `care` module owns `notes`, `medicines`, `medicine_intakes`, `day_plans`, `plan_items`, `treatments_given` and `check_ins` (AR8, AR13). Publishing is one SQL function, `publish_day_plan` (AR14). The app records and alerts; it never advises (BR-06).
+
+### Story 5.1: Doctor's findings and notes
+
+As a doctor,
+I want to record post-arrival findings and notes and choose who can see each,
+So that the clinical record is complete and the patient sees only what I choose to share.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `notes` table exists, owned by the `care` module, with `clinic_id`, the episode, a kind (finding or note), the text, the author, the time and `visibility` of `shared` or `staff_only`, with row-level security (AR8, AR10, AR3)
+**And** pgTAP tests prove, using the capability matrix, that a Patient reads only `shared` notes of their own episode, never `staff_only` ones, never another patient's, and cannot write a note (FR-5, FR-31, AR18)
+
+**Given** the Care tab on a patient record
+**When** a Doctor adds a finding or note
+**Then** the visibility toggle defaults to Staff-only, the current choice is stated in words ("Staff-only. The patient cannot see this." or "Shared with patient"), and a Staff-only note carries the lock marker on the item itself (FR-31, UX-DR8)
+
+**Given** a Coordinator
+**When** they open the Care tab
+**Then** they read Shared notes only, cannot see Staff-only ones, and the add-note control is not shown (FR-3, FR-31)
+**And** a direct write of a note by a Coordinator is refused by policy (FR-3, AR10)
+
+**Given** an Admin
+**When** they open the Care tab
+**Then** they read Shared notes only `[ASSUMPTION: least privilege until the owner confirms Admin access to Staff-only notes]` (FR-31, AR10)
+
+**Given** a shared note
+**When** it is saved
+**Then** the patient is notified "Your doctor added a note." through `app.emit_event` with no note text in the email (FR-31, AR12)
+
+### Story 5.2: Prescribe and change medicines
+
+As a doctor,
+I want to record the medicines I prescribe and change a dose without losing the history,
+So that the patient sees the current course and the clinic keeps the record.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `medicines` table exists, owned by the `care` module, with `clinic_id`, the episode, name, dose, schedule, start date, duration in days, end date, prescriber and status, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Doctor writes medicines, a Coordinator and Admin read them, and a Patient reads only their own episode's medicines (FR-32, FR-5)
+
+**Given** the Care tab
+**When** a Doctor adds a medicine
+**Then** name, dose, schedule, start date and duration are required, the end date is calculated, and each missing field has a specific message (FR-32)
+
+**Given** a current medicine
+**When** the Doctor changes its dose or schedule
+**Then** the existing row is ended on that day and a new row is created, so the earlier dose stays in history (FR-32, FR-39)
+**And** the patient is notified "Your medicines were updated." with no medicine names in the email (AR12)
+
+**Given** a medicine whose duration has passed
+**When** the lists are shown
+**Then** it leaves the current course and appears under earlier medicines (FR-32)
+
+**Given** a Coordinator
+**When** they attempt to add or change a medicine
+**Then** the control is not shown and a direct write is refused by policy (FR-3, FR-32)
+
+### Story 5.3: Build a Day Plan and the Plans screen
+
+As a coordinator,
+I want to build a day's plan of treatments, meals, medicines and the stay for a patient,
+So that the patient will know what happens tomorrow.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** `day_plans` and `plan_items` tables exist, owned by the `care` module, with `clinic_id`, one plan per episode per date (unique), a status of draft or published, and items of kind therapy, meal, medicine, review or other with a start time, title, detail and therapist name, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient can never read a draft plan, and reads a published plan of their own episode only (FR-5, FR-33, AR10)
+
+**Given** the Care tab
+**When** Staff choose a date and add items
+**Then** items group under Morning, Midday and Evening, can be edited, reordered and deleted, and the plan shows a Draft badge with the date it was saved (FR-33, UX-DR16)
+**And** the stay for that date is shown as a read-only line from the Accommodation section (FR-33, FR-27)
+
+**Given** the Plans screen in the clinic area
+**When** a Coordinator opens it
+**Then** it lists patients currently in the Care phase with tomorrow's plan status (Not started, Draft or Published), and tapping one opens that plan (FR-33, UX-DR13)
+
+**Given** the Day Plan builder on a phone and on a laptop
+**When** the same plan is edited on each
+**Then** the data and the actions are the same, and the date strip works by touch and by keyboard (NFR2, UX-DR23)
+
+### Story 5.4: Copy yesterday and publish to the patient
+
+As a coordinator,
+I want to copy yesterday's plan and publish tomorrow's in one step,
+So that a routine day takes a minute, not twenty.
+
+**Acceptance Criteria:**
+
+**Given** a patient with a plan for the previous date
+**When** Staff choose Copy yesterday on a new date
+**Then** yesterday's items are copied into a Draft for the chosen date with times and details, and the draft can be edited before publishing (FR-33)
+**And** copying onto a date that already has a plan asks for confirmation and names what will be replaced (UX-DR26)
+
+**Given** a Draft plan
+**When** Staff choose Publish to patient
+**Then** a confirmation names the patient and the date, and on confirming the SQL function `publish_day_plan` sets the status to published, records the time and creates the patient notification in one transaction (FR-33, AR14, AR12)
+**And** the badge changes to "Published at 17:42" (UX-DR16)
+
+**Given** the Publish action is submitted twice
+**When** the second request arrives
+**Then** no second notification is created and the screen says "Already published." (FR-33, AR7, NFR7)
+
+**Given** a published plan that Staff edit and publish again
+**When** it is published
+**Then** the patient sees the new version and one notification "Your plan for Thursday 12 November was updated." is sent (FR-33)
+
+**Given** a Doctor
+**When** they build or publish a Day Plan
+**Then** they can, and a Patient role cannot call `publish_day_plan` (FR-3, AR17)
+**And** a pgTAP test covers the function as an exposed object (AR18)
+
+### Story 5.5: Record treatments given
+
+As a coordinator,
+I want to record the treatments actually given each day,
+So that the record shows what happened as well as what was planned.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `treatments_given` table exists, owned by the `care` module, with `clinic_id`, the episode, the date, an optional link to the planned item, treatment, therapist name, duration in minutes and notes, with row-level security and pgTAP tests (AR3, AR8, AR18)
+
+**Given** a published Day Plan
+**When** Staff open it after the day
+**Then** each planned therapy offers "Record as given", prefilled and editable, and a treatment not in the plan can be added (FR-34)
+**And** a treatment given can differ from the one planned, and both are kept and shown side by side (FR-34)
+
+**Given** a record
+**When** it is saved
+**Then** it stores the treatment, therapist name, duration and notes for that date (FR-34)
+**And** a duration of zero or negative is refused with "Enter how many minutes the treatment took." (FR-34)
+
+**Given** a Patient
+**When** they read their record
+**Then** they cannot read treatments-given notes, because the patient's day view shows the plan only, proven by pgTAP (FR-5, FR-34)
+
+### Story 5.6: The patient's Plan tab and day view
+
+As a patient,
+I want to see my schedule, meals and current medicines for the day,
+So that I know what to expect without asking anyone.
+
+**Acceptance Criteria:**
+
+**Given** a published Day Plan for the patient's episode
+**When** the patient opens Plan
+**Then** the day view shows the date, then the schedule grouped Morning, Midday and Evening, the meals, and the current medicines, at 18px with exact times in the patient's local time and the Pune time in brackets (FR-35, UX-DR2, UX-DR20)
+**And** a date switcher moves between days that have a published plan (FR-35)
+
+**Given** no published plan for a date
+**When** the patient opens it
+**Then** the screen says "Your plan for this day has not been published yet. Your coordinator will publish it." and shows no draft information (FR-35, UX-DR21)
+
+**Given** the medicines section
+**When** it is shown
+**Then** it lists the current course only, each with name, dose and schedule, and a "Show earlier medicines" button reveals the history (FR-32, FR-35)
+**And** the footer shows the clinic phone and the emergency line, and nothing on the screen explains what a medicine or a score means medically (UX-DR22, BR-06)
+
+**Given** two patients
+**When** each opens Plan
+**Then** each sees only their own plan, proven by an end-to-end test with Patient A and Patient B (FR-5, AR18)
+
+### Story 5.7: Tick medicines as taken
+
+As a patient,
+I want to mark each medicine as taken,
+So that the clinic knows I followed my plan and I do not lose track.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `medicine_intakes` table exists, owned by the `care` module, with `clinic_id`, the medicine, the date, the slot, the time taken and the source (patient or staff), with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient can write intakes only for their own medicines and cannot read another patient's (FR-5, FR-35)
+
+**Given** the day view
+**When** the patient taps "Taken" on a medicine
+**Then** the row reads "Taken at 08:10" in words, not only a tick, and the time and source are stored (FR-35, UX-DR17)
+**And** the patient can undo within 10 minutes and not after (UX-DR17)
+
+**Given** Staff open the patient's record
+**When** they view the day
+**Then** they see which medicines were taken and can record one on the patient's behalf, with source staff (FR-35)
+
+**Given** the same medicine tapped twice quickly
+**When** both requests arrive
+**Then** one intake exists (FR-35, NFR7)
+
+**Given** the demo journey for UJ-2
+**When** the end-to-end test runs
+**Then** the coordinator copies yesterday's plan and publishes it, the patient sees it on a phone-sized browser and taps Taken, and the coordinator sees the intake, with the isolation suite passing for every table added in this epic (UJ-2, FR-6)
+
 <!-- NEXT EPIC -->
