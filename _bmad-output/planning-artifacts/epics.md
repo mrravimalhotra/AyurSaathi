@@ -550,4 +550,238 @@ So that the Documents epic does not hit a surprise late.
 **Then** a findings note in `docs/spikes/` records the working approach, the oldest phone tested and any change to Epic 7
 **And** no user-facing screen is added by this story
 
+## Epic 2: Patient records and onboarding
+
+The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter and move patients between phases or start a new episode for a returning patient. Covers FR-9 (list, search and filter), FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-47. The Invite itself is sent in Epic 3; the needs-attention block is built in Epic 3. The `patients` module is the only writer of `patients`, `episodes`, `phase_events` and `consents`; the `onboarding` module owns only `onboarding_drafts` and calls the `patients` module's exported functions (AR8).
+
+### Story 2.1: Patient list with phase, search and filter
+
+As a coordinator or doctor,
+I want to see my clinic's patients with their current phase and find one quickly,
+So that I can open the right record in a few taps.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** `patients` and `episodes` tables exist, owned by the `patients` module, each with `clinic_id`, row-level security and policies for Staff, with a Patient able to read only their own row through `app.user_patient_id()` (AR3, AR4, AR8)
+**And** pgTAP tests prove Patient A cannot read or write Patient B's rows, Staff of Clinic X cannot read Clinic Y's, and a Patient cannot write a patient row, and the coverage check passes (FR-4, FR-5, AR18)
+
+**Given** the demo seed
+**When** it runs
+**Then** invented patients across all six phases exist for the demo clinic, with no real names, and a second run changes nothing (FR-48, NFR1)
+
+**Given** a signed-in Staff user
+**When** they open Patients
+**Then** a list shows each patient with name, a phase chip (number and name), one status badge (Nothing due for now) and last activity, and the whole row is the target (FR-9, UX-DR6, UX-DR13)
+**And** with no patients the screen says "No patients yet. Add the first patient." with an Add patient button (UX-DR21)
+
+**Given** the list
+**When** the user types in search or picks a phase filter
+**Then** results narrow by name, email or phone, and by phase, returning only patients of the user's clinic (FR-9)
+**And** on a laptop pressing "/" focuses the search field (UX-DR26)
+
+**Given** a patient row
+**When** it is opened
+**Then** a patient record page shows an Overview with name, contact details, nationality, the current phase chip and the record tabs (Overview, Before arrival, Arrival, Care, After, Documents), the later tabs showing "Nothing here yet" (FR-9)
+**And** on a laptop at 1024px or wider the list sits at 360px beside the record, and on a phone the record opens full screen (UX-DR10, UX-DR24)
+
+### Story 2.2: Add a patient
+
+As a coordinator,
+I want to add a new patient with the few details I always have,
+So that their record exists and I can start their journey.
+
+**Acceptance Criteria:**
+
+**Given** the Patients list
+**When** the coordinator taps Add patient
+**Then** a dedicated flow opens, separate from the list, with a "Step 1 of N" progress word, and the step count is driven by configuration so later stories can add steps (FR-13, UX-DR14)
+
+**Given** step 1
+**When** the coordinator fills name, email, phone and nationality as required fields
+**Then** the patient can be created with an optional photo, date of birth, passport number, emergency contact name and phone (FR-13)
+**And** the starting phase can be chosen between Enquiry (default), Assessment and Planning
+
+**Given** a missing or invalid field
+**When** the form is submitted
+**Then** each message is specific and in plain words, for example "Enter the phone number with country code, for example +43 1 234 5678." and "Date of birth cannot be in the future." (FR-13)
+**And** an emergency contact name without a phone asks for the phone, the first invalid field takes focus, and the input is kept (UX-DR21)
+
+**Given** a valid form on the review screen
+**When** the coordinator confirms
+**Then** a patient row and a first episode are created through the `patients` module's exported function in one action that returns the typed Result and uses an idempotency key, so a double tap creates one patient (AR7, AR14)
+**And** the new patient appears in the list and opens on Overview, with nobody emailed and no sign-in account created yet (FR-13)
+
+**Given** a Doctor or Admin
+**When** they use Add patient
+**Then** it works, and a Patient role cannot reach the flow (FR-3)
+**And** the same flow works on phone and laptop with large touch targets and keyboard access (NFR2, UX-DR23)
+
+### Story 2.3: Save an onboarding draft and resume it
+
+As a coordinator,
+I want to save an unfinished onboarding and come back to it,
+So that an interruption does not lose what I typed.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `onboarding_drafts` table exists, owned by the `onboarding` module, with `clinic_id`, row-level security and a policy that lets Staff of the clinic read and write their clinic's drafts and nobody else, with pgTAP tests (AR8, AR18)
+
+**Given** an onboarding in progress
+**When** the coordinator taps Save draft, which is always visible, or tries to leave
+**Then** the draft is saved, and leaving prompts "Save as draft?" (FR-14, UX-DR14)
+**And** a draft creates no patient, no sign-in account and no Invite (FR-14)
+
+**Given** saved drafts
+**When** the coordinator opens Patients
+**Then** a "Drafts (N)" entry lists them with name and the date saved, and tapping one resumes at the step where it stopped with the input restored (FR-14)
+
+**Given** a draft
+**When** the coordinator discards it
+**Then** a confirmation names the draft, and after confirming it is deleted (UX-DR26)
+
+**Given** a draft that is later completed
+**When** the patient is created
+**Then** the draft is removed in the same action and holds no files, because documents attach only to a saved patient (AR15)
+
+### Story 2.4: Duplicate patient warning
+
+As a coordinator,
+I want to be warned when someone with the same email, phone or passport number already exists,
+So that I do not create a second record for the same person.
+
+**Acceptance Criteria:**
+
+**Given** the details step
+**When** the coordinator leaves the email, phone or passport field
+**Then** the system checks the clinic's existing patients for a match on that value (FR-15)
+
+**Given** a match
+**When** it is found
+**Then** a warning shows the existing patient's name and phase with "Open that record" and "Continue anyway" (FR-15)
+**And** choosing Open that record leaves the draft saved and opens the existing record
+
+**Given** the same email in a different clinic's database
+**When** the check runs
+**Then** no match is shown, because the check reads only the user's own clinic (FR-4)
+**And** a pgTAP test proves a Staff user of Clinic X cannot see Clinic Y patients through the check
+
+**Given** an email typed in different capitalisation
+**When** the check runs
+**Then** it still matches, and an email already taken shows "A patient with this email already exists. Open their record instead." (FR-15)
+
+### Story 2.5: Record consent during onboarding
+
+As a coordinator,
+I want to record that the patient has agreed to the clinic keeping their information,
+So that consent is captured at the start with the wording the clinic uses.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `consents` table exists, owned by the `patients` module, with `clinic_id`, the consent text version, the time, who recorded it, how it was given, and a nullable withdrawn time, with row-level security and pgTAP tests, where a Patient can read only their own consents (FR-16, AR3, AR18)
+
+**Given** the onboarding flow
+**When** it runs
+**Then** Consent is step 2 and the step count becomes three (Details, Consent, Review and invite) (FR-16, UX-DR14)
+
+**Given** step 2
+**When** it is shown
+**Then** it displays the clinic's current consent text from settings with a visible "Sample wording. Not legal text." badge, and a tick box with the words of what is being agreed (FR-16, AR9)
+**And** the patient cannot be created until the box is ticked, with a message that says why
+
+**Given** a patient is created
+**When** the consent is saved
+**Then** it stores the text version, the timestamp, who ticked it and how it was given (in person or by phone)
+**And** the consent text of that version stays readable later even if the clinic updates the wording
+
+**Given** a draft saved at step 2
+**When** it is resumed
+**Then** the consent tick is not carried over and must be given again at the time of creation (FR-16)
+
+### Story 2.6: Move an episode between phases
+
+As a coordinator or doctor,
+I want to move a patient's episode forward or back between the six phases,
+So that the record always shows where the patient is in the journey.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `phase_events` table exists, owned by the `patients` module, with row-level security, and `episodes.phase` is writable only through the SQL function `move_phase`, which writes the history row in the same transaction (FR-10, AR14)
+**And** pgTAP tests prove a direct update of `episodes.phase` is refused for every role (AR18)
+
+**Given** the patient's Overview
+**When** Staff choose a new phase
+**Then** a confirmation names the patient and the new phase, an optional note can be added, and after confirming the phase chip updates (FR-10, UX-DR26)
+**And** moving to any phase, forward or back, is allowed (assumption recorded in the spine)
+
+**Given** a move
+**When** it completes
+**Then** a history entry records who moved it, when, from which phase to which, and the note, and the Overview lists the history in date order (FR-10)
+
+**Given** two staff members move the same episode nearly together
+**When** both submit
+**Then** both are recorded in order and the final phase is that of the later move, with no lost history (FR-10)
+
+**Given** a Patient role
+**When** they attempt to call `move_phase`
+**Then** it is refused (FR-3, AR17)
+
+### Story 2.7: Start a new episode for a returning patient
+
+As a coordinator,
+I want to start a new visit for a patient who has been treated before,
+So that their record and details carry over and nothing is re-entered.
+
+**Acceptance Criteria:**
+
+**Given** a patient with an earlier episode
+**When** Staff choose Start new episode on Overview
+**Then** the choices for the starting phase are Assessment or Planning only, with no Enquiry option (FR-11, BR-04)
+
+**Given** a new episode is started
+**When** it is created
+**Then** the patient's name, contact details, nationality and consents are unchanged and not asked for again (FR-11)
+**And** the earlier episode stays visible, marked closed with its closing date, and the new episode shows as current (FR-11)
+
+**Given** a patient with several episodes
+**When** Overview is shown
+**Then** episodes are listed newest first, each with its own phase chip and phase history, and each moves through phases independently (FR-10, FR-11)
+
+**Given** a list of patients
+**When** a returning patient is searched for
+**Then** the single patient is found once, not once per episode (FR-9)
+**And** the new episode starts through `move_phase` so its first history entry exists, with pgTAP coverage (AR14)
+
+### Story 2.8: Patient time zone and time display
+
+As a coordinator or patient,
+I want times shown in the patient's own time zone with the clinic time beside it,
+So that flights and check-ins are never misread across countries.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** `patients.timezone` stores an IANA zone and `clinics.default_timezone` stores the clinic's zone, set to Asia/Kolkata in the demo seed (FR-47, AR11)
+
+**Given** a new patient
+**When** the coordinator does not set a zone
+**Then** the patient defaults to the clinic's zone, and the details step offers a searchable zone field with the country's likely zone pre-selected from nationality (FR-47)
+
+**Given** a stored instant
+**When** a screen shows it to a viewer
+**Then** it displays as "Thu 12 Nov, 14:35 CET (Pune 19:05)" when the viewer's zone differs from the clinic's, and without the brackets when it does not (FR-47, UX-DR20)
+**And** all instants remain `timestamptz` UTC in storage (AR11, NFR4)
+
+**Given** unit tests
+**When** they run for patients in Europe, India, the US West Coast and across a daylight-saving change
+**Then** every case converts and displays correctly, and a check-in's `local_date` helper returns the date in the patient's zone (FR-47, AR11)
+
 <!-- NEXT EPIC -->
