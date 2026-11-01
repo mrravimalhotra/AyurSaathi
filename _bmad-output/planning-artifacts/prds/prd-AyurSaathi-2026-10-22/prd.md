@@ -48,7 +48,7 @@ Therapists and kitchen staff (the coordinator enters for them), attendants and c
 - **UJ-2. Meera onboards a patient and publishes tomorrow's plan.**
   - **Persona + context:** Meera, coordinator, on a phone between other tasks.
   - **Entry state:** Signed in as coordinator, in the clinic area.
-  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; Meera saves a draft when interrupted and resumes; uploads a passport photo from a phone; submits and the invite is sent. During care Meera opens a Patient's Day Plan, copies yesterday's Day Plan, changes two items and publishes it.
+  - **Path:** starts onboarding, enters name, email, phone and nationality; the consent step shows the sample text; Meera saves a draft when interrupted and resumes; submits and the invite is sent; from the success screen adds a passport photo from a phone. During care Meera opens a Patient's Day Plan, copies yesterday's Day Plan, changes two items and publishes it.
   - **Climax:** the patient's day view updates and the patient is notified.
   - **Resolution:** the plan shows as published with a time. Tomorrow starts from this plan.
   - **Edge case:** a patient with the same email already exists. The app warns and offers to open that record.

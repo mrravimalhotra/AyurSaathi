@@ -46,7 +46,7 @@ A responsive web app, installable to the phone home screen, with three areas in 
 |---|---|---|---|
 | Today | Bar, app open | Alerts (needs-attention); today's arrivals; plans to publish; check-ins to review count | FR-9, 29, 30, 44 |
 | Patients | Bar | List with phase chip, filter by phase, search | FR-9 |
-| Onboard a patient | Patients, "Add patient" | Four steps: Details, Consent, Documents, Review and invite; save draft | FR-13–16, 19 |
+| Onboard a patient | Patients, "Add patient" | Three steps: Details, Consent, Review and invite; save draft; on success an "Add documents now" card | FR-13–16, 19 |
 | Patient record | Patients list, Alert | Header (name, phase, time zone, alerts); tabs below | FR-10, 11, 47 |
 | Record: Overview | Tab | Summary, phase history, move phase, start a new Episode | FR-10, 11 |
 | Record: Before arrival | Tab | Enquiry log, Quotations, Assessment log, Programme, Payments | FR-20–24 |
@@ -95,9 +95,9 @@ Behavioral rules. Visual specs live in `DESIGN.md.Components`.
 | Phase chip | Lists, headers | Number plus name. Not a button except inside the move-phase control. |
 | Alert row | Today | One sentence, patient name, time, one "Open" action. Opening resolves nothing by itself; resolution happens in the destination (for example reviewing the check-in). |
 | Patient list row | Patients | Name, phase chip, one status badge (Needs review, Arriving today, Nothing due), last activity. Whole row is the target. |
-| Onboarding stepper | Onboard | Four steps with "Step 2 of 4". Back keeps input. "Save draft" always visible; leaving prompts "Save as draft?". Step 2 (Consent) shows the sample text with a visible "Sample wording. Not legal text." badge and records version, time and who ticked it. |
+| Onboarding stepper | Onboard | Three steps with "Step 2 of 3". Back keeps input. After "Send invite" the success screen shows an "Add documents now" card (passport, medical records) that opens the Documents tab; documents attach only to the saved patient record, never to a draft. "Save draft" always visible; leaving prompts "Save as draft?". Step 2 (Consent) shows the sample text with a visible "Sample wording. Not legal text." badge and records version, time and who ticked it. |
 | Duplicate warning | Onboard step 1 | Appears on blur of email, phone or passport. Shows the match with "Open that record" and "Continue anyway". |
-| Document uploader | Onboard, Documents | Camera or file chooser. HEIC photos are converted before upload with a visible "Preparing photo…" line. Each file shows name, size, visibility toggle (Shared or Staff-only) and a Remove action behind a confirmation. Limits shown before choosing: "PDF, JPG, PNG or HEIC, up to 15 MB". |
+| Document uploader | Success-screen card, Documents tab | Camera or file chooser. HEIC photos are converted before upload with a visible "Preparing photo…" line. Each file shows name, size, visibility toggle (Shared or Staff-only) and a Remove action behind a confirmation. Limits shown before choosing: "PDF, JPG, PNG or HEIC, up to 15 MB". |
 | Visibility toggle | Notes, assessments, documents | A two-option control, "Shared with patient" or "Staff-only", default Staff-only. The current choice is stated in words beside the control. |
 | Day Plan builder | Care | Date strip across the top. "Copy yesterday" fills a Draft; items are editable rows grouped Morning, Midday, Evening. "Publish to patient" is the only primary action; it shows a confirmation with the patient name and date. Draft versus Published is a status badge. Publishing twice does nothing new and says "Already published." |
 | Medicine row | Plan, Care | Name, dose, schedule, "Taken" toggle with time. The patient toggle can be undone for 10 minutes. |
@@ -203,8 +203,8 @@ Failure: the mail scanner already opened the link. Redeem still works because th
 1. Meera taps Patients, then "Add patient".
 2. Step 1: name, email, phone, nationality. The duplicate check runs on blur.
 3. Step 2: the sample consent text with its Sample badge; Meera records that the patient agreed.
-4. Step 3: Meera photographs the passport; the uploader shows "Preparing photo…" then the file with Staff-only selected.
-5. Step 4: review, "Send invite". The record opens on Overview with the Invite status "Sent".
+4. Step 3: review, "Send invite". The success screen shows the Invite status "Sent" and an "Add documents now" card.
+5. Meera taps the card, photographs the passport; the uploader shows "Preparing photo…" then the file with Staff-only selected. The record opens on Overview.
 6. Later, in the Care tab Meera opens Day Plan, picks tomorrow, taps "Copy yesterday", changes two items, and taps "Publish to patient".
 7. **Climax:** the badge changes to "Published at 17:42" and the confirmation names the patient.
 

@@ -156,6 +156,7 @@ flowchart TD
 - **Binds:** FR-17, FR-18
 - **Prevents:** public or guessable file access; browser-only limits; lingering links
 - **Rule:**
+  - Documents attach only to a saved patient; onboarding drafts hold no files, so there is nothing to clean up when a draft is abandoned.
   - Private buckets only. Path is `<clinic_id>/<patient_id>/<episode_id or general>/<document_id>.<ext>`. Storage policies join to `documents` to enforce clinic, Patient and `visibility`; a path prefix alone is not enough.
   - Buckets set size and allowed MIME types, upsert is disallowed, and the server re-checks file content type. Files are served with `nosniff` and attachment disposition.
   - Download links are generated per click and expire in about 60 seconds. Uploads use short-lived signed URLs.

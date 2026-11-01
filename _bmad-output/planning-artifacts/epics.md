@@ -122,7 +122,7 @@ UX-DR10: Sidebar. Staff laptop (1024px and up), 240px, same items plus Settings 
 UX-DR11: Demo ribbon. A non-dismissible "Demo data. Not real patients." strip on every screen of the prototype.
 UX-DR12: Alert row and needs-attention block on Today: icon, plain sentence, patient name, time, one "Open" action; unresolved above resolved.
 UX-DR13: Patient list row: name, phase chip, one status badge (Needs review, Arriving today, Nothing due), last activity; whole row is the target; filter by phase; search with "/" focus on laptop.
-UX-DR14: Onboarding stepper. Four steps (Details, Consent, Documents, Review and invite) with "Step N of 4"; Save draft always visible; leave prompts; duplicate warning on blur of email, phone or passport; consent step shows the sample text with a "Sample wording. Not legal text." badge.
+UX-DR14: Onboarding stepper. Three steps (Details, Consent, Review and invite) with "Step N of 3"; on success an "Add documents now" card opens the Documents tab (documents attach to the saved patient, never to a draft); Save draft always visible; leave prompts; duplicate warning on blur of email, phone or passport; consent step shows the sample text with a "Sample wording. Not legal text." badge.
 UX-DR15: Document uploader. Camera or file chooser; "Preparing photo…" while HEIC converts; per-file name, size, visibility toggle and Remove behind a confirmation; limits shown before choosing; rejection messages in plain words.
 UX-DR16: Day Plan builder. Date strip, "Copy yesterday", items grouped Morning, Midday, Evening, Draft or Published badge, "Publish to patient" with a confirmation naming the patient and date; "Already published." on repeat.
 UX-DR17: Medicine row. Name, dose, schedule and a "Taken" toggle that reads "Taken at 08:10"; patient can undo within 10 minutes.
@@ -140,11 +140,102 @@ UX-DR28: Settings screens. Clinic (branding and terminology, Admin), Clinical ru
 
 ### FR Coverage Map
 
-{{requirements_coverage_map}}
+FR-1: Epic 1 - Staff sign-in
+FR-2: Epic 3 - Patient sign-in by link or code
+FR-3: Epic 1 - Roles
+FR-4: Epic 1 - Clinic isolation
+FR-5: Epic 1 - Patient isolation
+FR-6: Epic 1 - Isolation test suite
+FR-7: Epic 1 - Installable app
+FR-8: Epic 1 (Admin: branding and terminology) and Epic 6 (Doctor: check-in questions and flag rules) - Clinic Settings
+FR-9: Epic 2 (patient list, search, filter) and Epic 3 (needs-attention block) - Patient list
+FR-10: Epic 2 - Episodes and phase moves
+FR-11: Epic 2 - Returning Patient
+FR-12: Epic 3 - Patient home
+FR-13: Epic 2 - Onboard a Patient
+FR-14: Epic 2 - Save draft
+FR-15: Epic 2 - Duplicate warning
+FR-16: Epic 2 - Consent step
+FR-17: Epic 7 - Upload documents
+FR-18: Epic 7 - Documents tab
+FR-19: Epic 3 - Invite
+FR-20: Epic 8 - Log an enquiry
+FR-21: Epic 8 - Log a Quotation
+FR-22: Epic 8 - Log an Assessment
+FR-23: Epic 8 - Record the Programme
+FR-24: Epic 8 - Record payments received
+FR-25: Epic 4 - Flight details
+FR-26: Epic 4 - Pickup
+FR-27: Epic 4 - Accommodation
+FR-28: Epic 4 - Arrival-day card
+FR-29: Epic 4 - "I have landed" and "I need help"
+FR-30: Epic 4 - Flight-edit alert
+FR-31: Epic 5 - Post-arrival findings and Notes
+FR-32: Epic 5 - Prescribed medication
+FR-33: Epic 5 - Build and publish a Day Plan
+FR-34: Epic 5 - Record daily treatments given
+FR-35: Epic 5 - Patient day view
+FR-36: Epic 6 - Daily Check-in
+FR-37: Epic 6 - Review Queue
+FR-38: Epic 6 - Sample Flag Rules
+FR-39: Epic 6 - Review a Check-in
+FR-40: Epic 9 - Log departure assistance
+FR-41: Epic 9 - Schedule follow-up Check-ins
+FR-42: Epic 9 - Answer a follow-up Check-in
+FR-43: Epic 9 - Log Consultations
+FR-44: Epic 9 - Request an extra Consultation
+FR-45: Epic 3 - In-app inbox
+FR-46: Epic 3 - Email notifications
+FR-47: Epic 2 - Patient time zone
+FR-48: Epic 1 - Demo seed
 
 ## Epic List
 
-{{epics_list}}
+### Epic 1: Secure clinic app foundation
+Clinic staff sign in to their own clinic's isolated app, installed on a phone or opened on a laptop, with the clinic's branding. Isolation is proven by tests that grow with every table, a demo data set loads, and the early technical risks (region, link delivery, phone uploads with HEIC and signed links) are checked before anything depends on them.
+**FRs covered:** FR-1, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-48
+**Implementation notes:** Starts with the starter scaffold (AR1), CI, and the pgTAP harness with the coverage check (AR18). Includes the Admin part of FR-8; the Doctor part is in Epic 6. Includes feasibility stories for spikes S-3, S-4 and S-5 with no UI. Delivers: signed-in Today (empty), branding change, green isolation suite.
+
+### Epic 2: Patient records and onboarding
+The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter and move patients between phases or start a new episode for a returning patient.
+**FRs covered:** FR-9, FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-47
+**Implementation notes:** FR-9 here covers the patient list, search and phase filter only; the needs-attention block is in Epic 3. The Invite button is prepared but sending arrives in Epic 3. Delivers: add a patient end to end on phone and laptop.
+
+### Epic 3: Invite, patient sign-in and alerts
+A patient receives an invite, opens it on a phone, signs in by link or code with no password, and sees their journey Home. Notifications work through the in-app inbox and email, and staff see the needs-attention block.
+**FRs covered:** FR-2, FR-9, FR-12, FR-19, FR-45, FR-46
+**Implementation notes:** Heaviest in architecture despite few FRs: invites table, hashed token, redeem page, lib/privileged, the outbox, pg_cron, pg_net, signed sender route, rate limits (AR6, AR12, AR16, AR21). Includes the needs-attention block of FR-9 and the alerts table. Delivers: invite in Mailpit, patient signs in, Home shown.
+
+### Epic 4: Arrival
+The clinic enters pickup and stay, the patient adds flight details and sees the arrival-day card, and taps I have landed or I need help. The coordinator is alerted.
+**FRs covered:** FR-25, FR-26, FR-27, FR-28, FR-29, FR-30
+**Implementation notes:** Completes the walking skeleton and gives the needs-attention block its first real alerts.
+
+### Epic 5: Plan and patient day
+The Doctor records findings, notes and medicines. The coordinator builds, copies and publishes the Day Plan and records treatments given. The patient sees the schedule and diet, and ticks medicines taken.
+**FRs covered:** FR-31, FR-32, FR-33, FR-34, FR-35
+**Implementation notes:** Uses publish_day_plan as one SQL function (AR14). Delivers: published plan, a ticked medicine.
+
+### Epic 6: Check-in and doctor review
+The patient answers a daily check-in. The Doctor reviews check-ins flagged first, adds notes, changes medicines and marks them reviewed, and can edit the check-in questions and flag rules.
+**FRs covered:** FR-36, FR-37, FR-38, FR-39, FR-8
+**Implementation notes:** Includes the Doctor part of FR-8 as the last story, after check-ins run from seeded configuration. One check_ins table owned by care (AR13). review_check_in is one SQL function (AR14).
+
+### Epic 7: Documents
+Staff and patients add and view documents safely, with passport scans and records stored privately, shared or staff-only, and phone photos accepted.
+**FRs covered:** FR-17, FR-18
+**Implementation notes:** Documents attach only to a saved patient. Uses the risk learned in the Epic 1 feasibility stories (AR15).
+
+### Epic 8: Before arrival: enquiry, assessment, planning
+Staff log the enquiry and quotations, the Doctor logs the assessment, and staff record the programme and payments, so the patient history is complete from the first contact.
+**FRs covered:** FR-20, FR-21, FR-22, FR-23, FR-24
+**Implementation notes:** Each step moves the episode phase through move_phase.
+
+### Epic 9: Continuity
+After departure the clinic logs departure assistance and schedules follow-up check-ins, the patient answers them and can request an extra consultation, and consultations are logged.
+**FRs covered:** FR-40, FR-41, FR-42, FR-43, FR-44
+**Implementation notes:** Follow-up check-ins reuse the care check_ins table through create_due_check_in (AR13). Includes the pg_cron idempotency test.
+
 
 <!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
 
