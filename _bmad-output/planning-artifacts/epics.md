@@ -784,4 +784,214 @@ So that flights and check-ins are never misread across countries.
 **When** they run for patients in Europe, India, the US West Coast and across a daylight-saving change
 **Then** every case converts and displays correctly, and a check-in's `local_date` helper returns the date in the patient's zone (FR-47, AR11)
 
+## Epic 3: Invite, patient sign-in and alerts
+
+A patient receives an invite, opens it on a phone, signs in by link or code with no password, and sees their journey Home. Notifications work through the in-app inbox and email, and staff see the needs-attention block. Covers FR-2, FR-9 (needs-attention block), FR-12, FR-19, FR-45, FR-46. The `notifications` module owns `notifications` and `alerts`; the `access` module owns `invites`. All notification writes go through `app.emit_event`, and the service-role key is read only in `lib/privileged` (AR6, AR12).
+
+### Story 3.1: Notification outbox and the in-app inbox for staff
+
+As a staff member,
+I want to see updates addressed to me in an inbox,
+So that events that matter reach me inside the app.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `notifications` table exists, owned by the `notifications` module, with `clinic_id`, recipient auth user id, event type, subject, `dedupe_key`, payload, status, scheduled time and read state, with row-level security so a user reads only their own rows (AR12, FR-45)
+**And** pgTAP tests prove a user cannot read another user's notifications, Staff of Clinic X cannot read Clinic Y's, and a Patient reads only their own (AR18)
+
+**Given** the SQL function `app.emit_event(type, recipient_user_id, subject, dedupe_key, payload)`
+**When** it is called
+**Then** it accepts only event types from a closed enumeration, writes one notification per recipient, and treats a repeated `dedupe_key` as a no-op (AR12)
+**And** a role-wide event fans out to one row per user holding that role in the clinic
+**And** the function runs as invoker or, where definer, states its reason, sets an empty `search_path`, lives in a private schema and has `EXECUTE` revoked from public, `anon` and `authenticated` (AR17)
+
+**Given** a staff member with notifications
+**When** they open More, Updates
+**Then** the inbox lists them newest first, unread ones marked "New" in words, and opening one marks it read (FR-45, UX-DR21)
+**And** an empty inbox says "No updates yet." and a user sees only their own notifications (FR-45)
+
+**Given** the demo seed
+**When** it runs
+**Then** one invented notification exists for the demo Coordinator so the inbox can be demonstrated (FR-48)
+
+### Story 3.2: Needs-attention block on Today
+
+As a coordinator or doctor,
+I want Today to list what needs my attention,
+So that I act on the right thing first.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `alerts` table exists, owned by the `notifications` module, with `clinic_id`, event type, patient, summary, created time and a resolved time, with row-level security and pgTAP tests (AR12, AR18)
+**And** alerts are raised only through `app.emit_event` (AR12)
+
+**Given** unresolved alerts for the clinic
+**When** a Staff user opens Today
+**Then** a "Needs attention (N)" block lists them, each row with an icon, a plain sentence, the patient name, the time and one "Open" button, unresolved above resolved (FR-9, UX-DR12)
+**And** Open goes to the patient record and does not resolve the alert by itself (UX-DR12)
+
+**Given** an alert is resolved by its destination action
+**When** the user returns to Today
+**Then** it moves to the resolved group and the count drops (FR-9)
+
+**Given** no alerts
+**When** Today loads
+**Then** it says "Nothing needs attention." (UX-DR21)
+**And** the block works the same on phone and laptop, with a loading skeleton while it loads (NFR2, UX-DR21)
+
+**Given** the demo seed
+**When** it runs
+**Then** one invented alert for the demo clinic exists so the block can be demonstrated before real alert sources arrive in later epics (FR-48)
+**And** a Patient cannot read any alert and Staff of Clinic X cannot read Clinic Y's, proven by pgTAP (FR-4, FR-5)
+
+### Story 3.3: Email delivery of notifications by the database scheduler
+
+As a patient or staff member,
+I want important updates to also reach my email,
+So that I do not have to keep the app open to know something happened.
+
+**Acceptance Criteria:**
+
+**Given** pending notifications
+**When** the hourly scheduled job runs in the database
+**Then** it calls the sender route through `pg_net` with a signed header, and the route accepts only signed calls and answers an unsigned call with a refusal (AR12, AR6)
+**And** the sender is the only code that reads pending notifications with the service-role key, inside `lib/privileged`, which takes no clinic from input (AR6)
+
+**Given** a pending email notification
+**When** the sender delivers it
+**Then** the email has a subject and body with no health content, only a prompt to open the app, and the status becomes sent (FR-46, AR12)
+**And** locally the message appears in Mailpit
+
+**Given** a failed send
+**When** the sender retries
+**Then** up to three attempts are made with increasing delay, each failure records its error text, and after the last the status is failed (FR-46)
+**And** the in-app notification still exists after a failed email (FR-46)
+
+**Given** the scheduler runs twice for the same window
+**When** both complete
+**Then** no notification is sent twice and a pgTAP or integration test proves it (AR12, NFR7)
+
+**Given** an email provider not yet configured
+**When** the app runs in the prototype
+**Then** it sends through the development mail setup, and the provider and domain are changed only by configuration (FR-46, AR25)
+
+### Story 3.4: Rate limits and browser hardening
+
+As a patient or staff member,
+I want the sign-in and invite pages protected against repeated guessing,
+So that nobody can break into an account by trying again and again.
+
+**Acceptance Criteria:**
+
+**Given** the sign-in, invite, resend and upload endpoints
+**When** a client exceeds the limit
+**Then** the endpoint answers with the `rate_limited` result and a message saying when to try again (AR21, AR7)
+**And** the limit applies per email address and per network address, and a legitimate user under the limit is unaffected
+
+**Given** any page
+**When** it loads
+**Then** a strict content security policy and frame, referrer and permissions headers are set (AR21)
+**And** an automated check fails if a response is missing the headers
+
+**Given** a repeated request for a link
+**When** it comes within the cooldown window
+**Then** it is refused and the message shows the seconds left (UX-DR21)
+**And** the cooldown applies whether or not the email exists, so the response does not reveal that (AR16)
+
+**Given** unit tests
+**When** they run
+**Then** they cover under-limit, at-limit, over-limit and the window resetting (AR21)
+
+### Story 3.5: Send an invite to a patient
+
+As a coordinator,
+I want to send a patient an invite from their record,
+So that they can open their plan on their own phone.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `invites` table exists, owned by the `access` module, storing a hashed token, the email, `clinic_id`, role patient, the patient, an expiry and a used time, with row-level security so only Staff of the clinic can create or read invites, and pgTAP tests (AR16, AR18)
+
+**Given** a patient record
+**When** Staff press Send invite on Overview, or choose "Send invite now" at the end of onboarding
+**Then** an invite is created through `lib/privileged`, which creates the patient's sign-in account with `app_role` patient and links it to the patient record, taking clinic and role from the invite row and never from input (AR6, AR16, FR-19)
+**And** an email with a single-use link and a code is queued through `app.emit_event`, and Overview shows the invite status "Sent" with the time (FR-19)
+
+**Given** an invite already sent
+**When** Staff press Resend
+**Then** a new invite replaces the old, the old link stops working, and the cooldown and rate limit apply (FR-19, AR16)
+
+**Given** onboarding
+**When** the coordinator finishes
+**Then** the success screen shows the invite status and an "Add documents now" card that is disabled with the words "Documents come next" until the Documents epic is built (UX-DR14)
+**And** a Patient role cannot send invites (FR-3)
+
+**Given** an invite expiry
+**When** it passes
+**Then** the link is refused with the message "That link has expired. Ask your clinic for a new one." `[ASSUMPTION: 24 hours]` (FR-19)
+
+### Story 3.6: Redeem an invite and sign in by link or code
+
+As a patient,
+I want to open my invite and sign in without a password,
+So that I can see my information without learning a new system.
+
+**Acceptance Criteria:**
+
+**Given** the invite email
+**When** the patient opens the link on a phone
+**Then** a page shows "Open your AyurSaathi account" with one button, and pressing the button redeems the invite and signs the patient in (FR-2, AR16)
+**And** merely loading the link, as a mail scanner would, does not use it up, proven by a test that requests the page by GET and then redeems (AR16)
+
+**Given** the link fails or has been used
+**When** the patient is shown the sign-in screen
+**Then** it offers a six-digit code field using one-time-code autofill, with the words "Type the code from the email" (FR-2, UX-DR27)
+**And** the message for a used or expired link is "That link has already been used or has expired. Type the code from the email, or ask for a new link." (FR-2, UX-DR21)
+
+**Given** a returning patient with no invite
+**When** they enter their email on the sign-in screen
+**Then** a new link and code are sent, the response is the same whether or not the email exists, and the cooldown and rate limit apply (FR-2, AR16, AR21)
+
+**Given** a link or code
+**When** it expires
+**Then** it is refused, the patient can still sign in with a valid code until it expires, and the expiry period is stated on the screen and in the email `[ASSUMPTION: one hour]` (FR-2, NFR8)
+
+**Given** a signed-in patient
+**When** they request any clinic route
+**Then** they receive "You do not have access to this page." with a link to their home (FR-3)
+**And** public sign-up stays disabled and the redirect address is limited to the configured allowlist (AR16)
+
+### Story 3.7: Patient Home with the journey bar and updates
+
+As a patient,
+I want a Home screen that shows where I am in my journey and what is new,
+So that I know what happens next without searching WhatsApp.
+
+**Acceptance Criteria:**
+
+**Given** a signed-in patient
+**When** Home loads
+**Then** it shows a greeting, a compact "Step N of 6, Phase" line with a six-segment bar, completed steps marked "Done" and the current step "Now", and the journey bar reads to a screen reader as "Step 4 of 6, Arrival, now" (FR-12, UX-DR6, UX-DR23)
+**And** a card for today shows what matters now, or "Nothing is planned for today." when there is nothing (FR-12)
+
+**Given** the patient shell
+**When** it renders
+**Then** the bottom bar shows Home, Plan, Documents and Check-in with icons and labels and 56px targets, and Plan, Documents and Check-in show their empty states ("Your plan for this day has not been published yet.", "No documents yet.", "Your next check-in is not scheduled.") until their epics are built (UX-DR9, UX-DR21)
+
+**Given** Updates on Home
+**When** notifications exist for the patient
+**Then** they list newest first with "New" in words, and opening one marks it read, with a Patient seeing only their own (FR-45, FR-5)
+**And** the footer shows the clinic phone and "In an emergency, call your local emergency number." (UX-DR22)
+
+**Given** a phone under 600px and a laptop
+**When** Home is viewed
+**Then** it is one column up to 560px wide, centred, at 18px body text and usable at 200% zoom without truncated labels (UX-DR2, UX-DR24, UX-DR23)
+**And** the patient sees no clinic-area navigation and no other patient's data, proven by an end-to-end test with Patient A and Patient B (FR-5, AR18)
+
 <!-- NEXT EPIC -->
