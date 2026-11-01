@@ -1376,4 +1376,186 @@ So that the clinic knows I followed my plan and I do not lose track.
 **When** the end-to-end test runs
 **Then** the coordinator copies yesterday's plan and publishes it, the patient sees it on a phone-sized browser and taps Taken, and the coordinator sees the intake, with the isolation suite passing for every table added in this epic (UJ-2, FR-6)
 
+## Epic 6: Check-in and doctor review
+
+The patient answers a daily check-in. The Doctor reviews check-ins flagged first, adds notes, changes medicines and marks them reviewed, and can edit the check-in questions and flag rules. Covers FR-36, FR-37, FR-38, FR-39 and the Doctor part of FR-8. `check_ins` is one table owned by `care`, with a unique key of episode, kind, template and local date; every flag is written only by the flag-evaluation function; review is one SQL function (AR13, AR14). The app records and alerts. It never interprets answers medically, never tells a patient they were flagged, and applies only rules the Doctor sets (BR-06).
+
+### Story 6.1: The patient's daily check-in
+
+As a patient,
+I want to answer a short check-in about my medicines and how I feel,
+So that my doctor knows how my treatment is going.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `check_ins` table exists, owned by the `care` module, with `clinic_id`, the episode, a kind (daily or follow_up), the questions version it was answered against, the Patient's local date, answers, flags, who reviewed and when, and a unique key on episode, kind, questions version and local date, with row-level security (AR13, AR3, AR8)
+**And** a SQL function `create_due_check_in` creates one check-in idempotently and is the only way a check-in row is created (AR13, AR14, NFR7)
+
+**Given** a patient in the Care phase
+**When** they open Check-in on or after 06:00 in their local time on a day with no check-in yet `[ASSUMPTION: daily window opens at 06:00 local]`
+**Then** that day's check-in is created once and shown as "Question 1 of 5", one question per screen, with large answer buttons, a progress word and a Back button at every step (FR-36, UX-DR18)
+**And** opening the tab twice or on two devices creates one check-in (FR-36, NFR7)
+
+**Given** the five sample questions
+**When** the patient answers
+**Then** the medicines question takes Yes, Partly or No, the score questions take 1 to 5 with words at each end ("Poor" to "Very good"), and the free-text answer is limited to 1,000 characters with a counter `[ASSUMPTION: these answer formats and limits]` (FR-36)
+**And** continuing without an answer says "Choose an answer to continue." (FR-36, UX-DR21)
+
+**Given** the last question
+**When** the patient reaches the review screen and taps Send
+**Then** the answers are saved once, and submitting twice does not create two check-ins (FR-36, AR7)
+**And** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and the line "For urgent help, call the clinic. In an emergency, call your local emergency number." (FR-36, UX-DR22)
+
+**Given** an already submitted check-in, another patient's, or a staff user
+**When** a write is attempted
+**Then** it is refused by policy, so a submitted check-in cannot be edited and Patient A cannot read or write Patient B's, proven by pgTAP (FR-5, AR18)
+**And** when no check-in is due the tab says "Your next check-in is Friday 13 November at 08:00." in the patient's local time (UX-DR21, UX-DR20)
+
+### Story 6.2: Flag evaluation with sample rules
+
+As a doctor,
+I want check-ins marked by rules I set, not rules built into the app,
+So that the clinic's judgement, not the software's, decides what needs attention.
+
+**Acceptance Criteria:**
+
+**Given** the flag rules stored in the clinic's settings
+**When** a check-in is submitted
+**Then** one SQL function evaluates the answers against the rules, writes the flag and the reasons in plain words, and does so in the same transaction as the submission (FR-38, AR9, AR13)
+**And** the function contains no clinical threshold of its own, so with an empty rule set no check-in is ever flagged (FR-38, BR-06)
+
+**Given** the sample rule set from the seed
+**When** a check-in has medicines answered "No" or any score of 2 or less
+**Then** it is flagged with the reason "Medicines: No" or "Sleep: 2 of 5", and the set is labelled "Sample rules. Not clinical advice." wherever it is shown (FR-38, UX-DR22) `[ASSUMPTION: sample rules exist only so the demo can show a queue; the real rules come from the Doctor]`
+
+**Given** a change to the rules in the settings data
+**When** the next check-in is submitted
+**Then** its evaluation follows the new rules with no code change (FR-38)
+
+**Given** a flagged check-in
+**When** the patient views their own check-in or any screen
+**Then** no flag, reason or word implying concern is shown to the patient (FR-38, UX-DR22)
+**And** pgTAP tests prove a Patient cannot read the flags column and the evaluation function is covered as an exposed object (AR18)
+
+**Given** unit tests
+**When** they run for each answer type and for an empty rule set, a rule with a missing question and a score at the boundary
+**Then** every case passes (FR-38)
+
+### Story 6.3: The Doctor's Review Queue
+
+As a doctor,
+I want a queue of check-ins with the flagged ones first,
+So that I look at the patients who need me before the rest.
+
+**Acceptance Criteria:**
+
+**Given** submitted check-ins
+**When** a Doctor opens Review on a phone or the Review Queue on a laptop
+**Then** the list shows flagged check-ins first, then by time, each with the patient name, the check-in kind and time, a "Needs review" badge with the reason in words and a "Sample rule" badge when the sample rules raised it (FR-37, UX-DR19)
+**And** a Doctor sees only check-ins of their own clinic (FR-4, FR-37)
+
+**Given** an empty queue
+**When** it loads
+**Then** it says "Nothing to review right now." and while loading shows a skeleton with the word "Loading" (UX-DR21)
+
+**Given** a check-in is flagged on submission
+**When** it is saved
+**Then** an alert is raised for the Doctors through `app.emit_event` with a `dedupe_key`, and it shows in the needs-attention block on Today with the patient name and time (FR-9, FR-37, AR12)
+
+**Given** a Coordinator or Admin
+**When** they open the queue
+**Then** they can read it but not review, and a Patient cannot see it (FR-3, FR-5)
+
+**Given** a laptop at 1024px or wider
+**When** the queue is shown
+**Then** the list sits at 360px beside the review pane, and on a phone each row opens the pane full screen, with the same actions on both (NFR2, UX-DR10, UX-DR24)
+
+### Story 6.4: Review a check-in
+
+As a doctor,
+I want to read a check-in, add a note, change a medicine and mark it reviewed from one screen,
+So that I do not have to leave the queue to act.
+
+**Acceptance Criteria:**
+
+**Given** a check-in in the queue
+**When** the Doctor opens it
+**Then** the review pane shows the answers in words, the patient's recent notes and current medicines, and the actions Add note, Change medicine and Mark reviewed (FR-39, UX-DR19)
+
+**Given** Add note
+**When** the Doctor writes it
+**Then** the visibility toggle defaults to Staff-only with the words "Staff-only. The patient cannot see this.", and choosing "Shared with patient" is stated in words (FR-31, FR-39, UX-DR8)
+
+**Given** Change medicine
+**When** the Doctor changes a dose
+**Then** it uses the medicine-change function from Story 5.2 so the earlier dose stays in history (FR-32, FR-39)
+
+**Given** Mark reviewed
+**When** the Doctor confirms
+**Then** the SQL function `review_check_in` records who and when, saves any note and medicine change and resolves the related alert, all in one transaction, so a failure part-way leaves nothing half-done (FR-39, AR14)
+**And** the row leaves the queue and the Today count drops (FR-39, FR-9)
+
+**Given** Mark reviewed submitted twice
+**When** the second request arrives
+**Then** it does nothing new and the screen says "Already reviewed." (FR-39, AR7, NFR7)
+
+**Given** the patient's next visit to the app
+**When** a shared note or changed medicine exists
+**Then** the patient sees the shared note and the current medicine, and never a Staff-only note (FR-31, FR-32, FR-5)
+**And** a Coordinator calling `review_check_in` is refused, proven by pgTAP (FR-3, AR17, AR18)
+
+### Story 6.5: The Doctor edits check-in questions and flag rules
+
+As a doctor,
+I want to set the check-in questions and the flag rules for my clinic,
+So that the check-in asks what I care about and flags what I decide.
+
+**Acceptance Criteria:**
+
+**Given** a Doctor
+**When** they open More, Settings, Clinical rules
+**Then** they can edit the questions (text, answer type, order, add and remove within limits) and the flag rules (for example "medicines is No", "any score is 2 or less") through a plain form, each validated by its schema (FR-8, UX-DR28, AR9)
+**And** the page carries the "Sample rules. Not clinical advice." badge while the sample set is in use (UX-DR22)
+
+**Given** the Doctor saves their own rule set
+**When** it is stored
+**Then** the badge changes to "Set by the clinic's doctor on 12 November" and the new rules apply to the next check-in only, without changing any check-in already answered (FR-8, FR-38)
+**And** each check-in keeps the version of the questions it was answered against, so old answers stay readable (FR-36, AR13)
+
+**Given** an invalid set, for example no questions or a rule that names a question that does not exist
+**When** the Doctor saves
+**Then** it is refused with a message that says what to fix and the input is kept (FR-8, UX-DR21)
+
+**Given** an Admin or Coordinator
+**When** they request the Clinical rules screen or call the save
+**Then** the screen is hidden from their navigation and the write is refused by policy, as Story 1.4's tests assert for this section (FR-8, FR-3, AR9)
+
+**Given** a laptop and a phone
+**When** the Doctor edits the same set on each
+**Then** the data and the actions are the same (NFR2)
+
+### Story 6.6: Walk the check-in and review journey
+
+As Ravi, the owner,
+I want to walk Dr. A's morning review from the patient's check-in to the reviewed note in one repeatable run,
+So that the whole care loop is proven working.
+
+**Acceptance Criteria:**
+
+**Given** a clean demo database
+**When** the end-to-end test for UJ-3 runs
+**Then** a patient in Care submits a check-in answering "No" to medicines, the Doctor's Today shows the alert, the Review Queue lists it first with its reason, the Doctor adds a shared note, changes a medicine and marks it reviewed, and the patient then sees the shared note and the changed medicine (UJ-3, FR-36 to FR-39)
+**And** the same run confirms the patient never sees a flag and a Coordinator cannot review (BR-06, FR-3)
+
+**Given** the run
+**When** it completes
+**Then** the isolation suite passes for every table added in Epics 5 and 6, including Patient A against Patient B and Clinic X against Clinic Y, and the coverage check finds no untested object (FR-4, FR-5, FR-6, AR18)
+**And** a written demo script for the care loop is saved in `docs/demo/care.md` for Ravi to follow by hand
+
+**Given** the demo script
+**When** Ravi follows it on a phone and a laptop
+**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
+
 <!-- NEXT EPIC -->
