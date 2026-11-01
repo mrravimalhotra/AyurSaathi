@@ -994,4 +994,183 @@ So that I know what happens next without searching WhatsApp.
 **Then** it is one column up to 560px wide, centred, at 18px body text and usable at 200% zoom without truncated labels (UX-DR2, UX-DR24, UX-DR23)
 **And** the patient sees no clinic-area navigation and no other patient's data, proven by an end-to-end test with Patient A and Patient B (FR-5, AR18)
 
+## Epic 4: Arrival
+
+The clinic enters pickup and stay, the patient adds flight details and sees the arrival-day card, and taps I have landed or I need help. The coordinator is alerted. Covers FR-25, FR-26, FR-27, FR-28, FR-29, FR-30. The `arrival` module owns `flights`, `pickups`, `accommodations` and `arrival_events`; alerts are raised only through `app.emit_event` (AR8, AR12). This epic completes the walking skeleton and gives the needs-attention block its first real alerts.
+
+### Story 4.1: Flight details
+
+As a coordinator or patient,
+I want to enter the patient's flight number and arrival time,
+So that everyone knows when to expect the patient.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `flights` table exists, owned by the `arrival` module, with `clinic_id`, the episode, flight number, airport, arrival instant in UTC, who entered it and who last changed it, with row-level security and pgTAP tests (AR3, AR4, AR8, AR18)
+**And** Staff can read and write flights of their clinic, a Patient can read and write only the flights of their own episode, and a Patient cannot read another patient's flight (FR-5, FR-25)
+
+**Given** the patient record's Arrival tab
+**When** Staff open it
+**Then** a Flight section shows the flight number and arrival time in the viewer's local time with the clinic time in brackets when the zones differ, or "Not yet confirmed." (FR-25, UX-DR20)
+**And** Staff can add or change the flight on phone or laptop (NFR2)
+
+**Given** a signed-in patient
+**When** they open Arrival details from Home
+**Then** they can add or change their own flight number and arrival date and time (FR-25)
+
+**Given** invalid input
+**When** the form is submitted
+**Then** a flight number not in airline-code-plus-number form shows "Enter the flight number as airline code and number, for example LX 148." and a missing time shows "Enter the arrival date and time." `[ASSUMPTION: flight number format check]` (FR-25)
+**And** the entered time is stored in UTC using the patient's time zone and shown back correctly to a viewer in a different zone (FR-25, AR11)
+
+### Story 4.2: Pickup details
+
+As a coordinator,
+I want to enter the car and driver who will meet the patient,
+So that the patient knows who is meeting them.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `pickups` table exists, owned by the `arrival` module, with `clinic_id`, the episode, driver name and phone, car, plate, meeting point and pickup time, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** Staff write pickups, a Patient can only read the pickup of their own episode and cannot write one, and cannot read another patient's pickup (FR-26, FR-5)
+
+**Given** the Arrival tab
+**When** Staff enter and save pickup details
+**Then** they show in a Pickup section and are visible to the patient (FR-26)
+**And** a missing driver phone shows "Not yet confirmed." and does not block saving the rest (FR-26, UX-DR21)
+
+**Given** a phone number
+**When** it is saved
+**Then** it must include a country code, with the message "Enter the phone number with country code, for example +91 98765 43210." (FR-26)
+
+**Given** a change by Staff
+**When** it is saved
+**Then** a notification "Your pickup details were updated." is sent to the patient through `app.emit_event`, and the patient's Updates shows it (FR-26, AR12)
+
+### Story 4.3: Accommodation and check-in details
+
+As a coordinator,
+I want to enter where the patient is staying and when they can check in,
+So that the patient knows where to go.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `accommodations` table exists, owned by the `arrival` module, with `clinic_id`, the episode, place, room, check-in time and check-out time, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** Staff write accommodation, a Patient can only read their own episode's accommodation, and cannot read another patient's (FR-27, FR-5)
+
+**Given** the Arrival tab
+**When** Staff save accommodation details
+**Then** they show in a Stay section and are visible to the patient (FR-27)
+**And** a check-out earlier than check-in is refused with "Check-out must be after check-in." (FR-27)
+
+**Given** a change by Staff
+**When** it is saved
+**Then** the patient is notified through `app.emit_event` with "Your stay details were updated." (FR-27, AR12)
+
+### Story 4.4: Arrival-day card on the patient's Home
+
+As a patient,
+I want one card that shows my flight, who meets me and where I am staying,
+So that I have everything I need on arrival day in one place.
+
+**Acceptance Criteria:**
+
+**Given** a patient whose episode has a flight or is in the Arrival phase
+**When** Home loads
+**Then** an arrival-day card shows the flight number and arrival time in the patient's local time with the Pune time in brackets, the driver's name and phone, the car and meeting point, and the place they stay (FR-28, UX-DR20)
+**And** any field Staff have not entered shows "Not yet confirmed." and the card still shows what is known (FR-28, UX-DR21)
+
+**Given** Staff change pickup or stay details
+**When** the patient reloads Home
+**Then** the card shows the new values (FR-28)
+
+**Given** the card on a phone
+**When** it is viewed at 200% zoom and at 320px width
+**Then** no label is truncated and the exact values (flight number, phone, plate) are never abbreviated (UX-DR2, UX-DR23)
+
+**Given** a patient with no flight, pickup or stay yet
+**When** Home loads
+**Then** the card is not shown and Home shows only the journey bar and today card (FR-28)
+
+### Story 4.5: "I have landed" and "I need help"
+
+As a patient,
+I want to tell the clinic I have landed or that I need help with my pickup,
+So that someone knows and can act.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `arrival_events` table exists, owned by the `arrival` module, with `clinic_id`, the episode, event type (landed or help), time and who recorded it, with row-level security and pgTAP tests (AR8, AR18)
+**And** a Patient can create events only for their own episode and cannot read another patient's events (FR-5)
+
+**Given** the arrival-day card
+**When** the patient taps "I have landed"
+**Then** an event is saved, a Coordinator alert and notification are raised through `app.emit_event` with a `dedupe_key`, and the screen says "Thank you. Your coordinator has been told." with the clinic phone (FR-29, AR12)
+**And** tapping twice raises one alert, not two (FR-29, NFR7)
+
+**Given** the patient taps "I need help with my pickup"
+**When** the event is saved
+**Then** the coordinators are alerted, and the screen shows the clinic phone and "For a medical emergency, call your local emergency number." (FR-29, UX-DR22)
+**And** the screen states that this tells the coordinator about the pickup and is not for medical emergencies (UX-DR22, BR-06)
+
+**Given** an alert
+**When** it appears on Today
+**Then** it shows the patient name, the event in words ("Landed" or "Needs help with pickup") and the time (FR-29, UX-DR12)
+**And** a Coordinator can mark it handled on the Arrival tab and it moves to resolved (FR-9, FR-29)
+
+### Story 4.6: Alert when the patient changes flight details
+
+As a coordinator,
+I want to be told when a patient changes their flight,
+So that I can re-plan the pickup in time.
+
+**Acceptance Criteria:**
+
+**Given** a patient edits their flight number or arrival time
+**When** the change is saved
+**Then** an alert is raised for the coordinators naming the patient and showing the old and new values, through `app.emit_event` (FR-30, AR12)
+
+**Given** Staff edit the same flight
+**When** the change is saved
+**Then** no alert is raised, because Staff made the change (FR-30)
+
+**Given** the patient edits the flight several times within a short window
+**When** the alerts are raised
+**Then** repeated edits update the same unresolved alert rather than creating many, and the alert shows the latest change (FR-30, NFR7)
+
+**Given** an alert
+**When** the coordinator opens it
+**Then** it goes to the Arrival tab's Flight section, and marking it handled resolves it (FR-9, FR-30)
+**And** a pgTAP test proves a Patient cannot read alerts (FR-5)
+
+### Story 4.7: Walk the arrival journey end to end
+
+As Ravi, the owner,
+I want to walk Anna's arrival journey from invite to landed in one repeatable run,
+So that the walking skeleton is proven working, not assumed.
+
+**Acceptance Criteria:**
+
+**Given** a clean demo database and Mailpit
+**When** the end-to-end test for UJ-1 runs
+**Then** a coordinator creates a patient with an invite, the invite arrives in Mailpit, the patient redeems it on a phone-sized browser, Home shows the journey bar, the patient adds a flight, sees the pickup and stay the coordinator entered, taps "I have landed", and the coordinator's Today shows the alert (UJ-1, FR-1 to FR-30)
+**And** the test also runs the failure case, where the link is used by a mail scanner first and the patient signs in with the typed code instead (UJ-1)
+
+**Given** the run
+**When** it completes
+**Then** the isolation suite is run in the same job and passes, including Patient A against Patient B and Clinic X against Clinic Y for every table added in Epics 1 to 4 (FR-4, FR-5, FR-6)
+**And** a short written demo script for the same journey is saved in `docs/demo/arrival.md` for Ravi to follow by hand
+
+**Given** the demo script
+**When** Ravi follows it on a phone and a laptop
+**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
+
 <!-- NEXT EPIC -->
