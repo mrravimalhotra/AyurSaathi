@@ -1,6 +1,6 @@
 ---
 status: draft
-stepsCompleted: ['step-01-validate-prerequisites']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics']
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/prd.md
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/addendum.md
@@ -237,27 +237,317 @@ After departure the clinic logs departure assistance and schedules follow-up che
 **Implementation notes:** Follow-up check-ins reuse the care check_ins table through create_due_check_in (AR13). Includes the pg_cron idempotency test.
 
 
-<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
+## Epic 1: Secure clinic app foundation
 
-## Epic {{N}}: {{epic_title_N}}
+Clinic staff sign in to their own clinic's isolated app, installed on a phone or opened on a laptop, with the clinic's branding. Isolation is proven by tests that grow with every table, a demo data set loads, and the early technical risks are checked before anything depends on them. Covers FR-1, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8 (Admin part), FR-48.
 
-{{epic_goal_N}}
+### Story 1.1: Scaffold the app from the trimmed starter
 
-<!-- Repeat for each story (M = 1, 2, 3...) within epic N -->
-
-### Story {{N}}.{{M}}: {{story_title_N_M}}
-
-As a {{user_type}},
-I want {{capability}},
-So that {{value_benefit}}.
+As Ravi, the builder,
+I want the app scaffolded from the official Next.js and Supabase starter with versions pinned,
+So that every later story builds on one running, reproducible base.
 
 **Acceptance Criteria:**
 
-<!-- for each AC on this story -->
+**Given** an empty repository branch
+**When** the scaffold is created from the official `with-supabase` example
+**Then** `next`, `react`, `@supabase/supabase-js` and `@supabase/ssr` are pinned to exact versions (no `latest`) and Node 24 LTS is set in the project settings
+**And** the sample sign-up and password pages that allow public sign-up are removed, and `lib/supabase` is replaced by `lib/db` (AR1)
 
-**Given** {{precondition}}
-**When** {{action}}
-**Then** {{expected_outcome}}
-**And** {{additional_criteria}}
+**Given** the scaffold
+**When** `npm run lint`, `npm run typecheck` and `npm run build` are run
+**Then** all three pass with no errors
+**And** `proxy.ts` is present and refreshes the session by calling `getClaims`, never `getSession` (AR5)
 
-<!-- End story repeat -->
+**Given** a clean clone and a local Supabase started with the Supabase CLI
+**When** a developer follows the README's three commands
+**Then** the app starts on localhost and shows a public landing page
+**And** environment variables are read from a documented `.env.example`; no secret is committed and the service-role key is not exposed to the browser (AR6)
+
+**Given** the folder layout in the architecture spine
+**When** the scaffold is inspected
+**Then** `app/(public)`, `app/(patient)`, `app/(clinic)`, `app/api/jobs`, `modules/`, `lib/`, `messages/en.json`, `supabase/migrations`, `supabase/tests`, `supabase/seed.sql` and `clinics.json` exist
+**And** where a pinned version does not build (Tailwind 4, TypeScript, Serwist), the fallback chosen is recorded in the README with the reason
+
+### Story 1.2: CI and the isolation test harness
+
+As Ravi, the builder,
+I want continuous checks that fail the build when a table has no access policy or no isolation test,
+So that no later story can ship an unprotected table by accident.
+
+**Acceptance Criteria:**
+
+**Given** a pull request
+**When** CI runs
+**Then** it runs lint, typecheck, unit tests, a migration check and the database tests (AR23)
+**And** a failed step fails the pull request
+
+**Given** the migrations folder
+**When** the policy check runs
+**Then** it fails if any table in an exposed schema has row-level security disabled or has no policy
+**And** it fails if any policy uses an unconditional `true` (AR3)
+
+**Given** the database tests (`supabase test db` with pgTAP)
+**When** the coverage check runs
+**Then** it lists every table, view, exposed function and bucket in the database
+**And** it fails the build if any has no isolation test (AR18)
+
+**Given** a deliberately unprotected fixture table and a table with no test, kept only in a test fixture
+**When** the checks run against the fixture
+**Then** each check fails with a message naming the offending object
+**And** a clean fixture passes, proving the checks detect real problems
+
+**Given** the harness
+**When** a test author needs to act as a user
+**Then** helper functions exist to run a statement as an anonymous user, Patient A, Patient B, Staff of Clinic X, Staff of Clinic Y and a demoted user with an old token
+**And** the helpers are documented in `supabase/tests/README.md` (FR-6)
+
+### Story 1.3: Design foundation and the demo shell
+
+As a staff member or patient,
+I want every screen to carry the AyurSaathi look and the demo notice,
+So that the app feels consistent and invented data cannot be mistaken for real.
+
+**Acceptance Criteria:**
+
+**Given** the app in a browser
+**When** any page loads
+**Then** the colour, type, spacing and radius tokens from `DESIGN.md` are applied as theme variables, in light and dark themes following the system setting (UX-DR1, UX-DR3)
+**And** the Atkinson Hyperlegible Next and Source Serif 4 fonts are self-hosted, with body text 18px for patient routes and 16px for clinic routes (UX-DR2)
+
+**Given** any page
+**When** it renders
+**Then** a "Demo data. Not real patients." ribbon shows at the top and cannot be dismissed (UX-DR11)
+
+**Given** the shared components
+**When** a primary button, secondary button, destructive button, card and input are rendered
+**Then** each matches the sizes and states in `DESIGN.md` (56px patient and 48px staff buttons, label above the input, error text with an icon and the words of the fix) (UX-DR4, UX-DR5)
+**And** each has a visible focus ring of 3px with a 2px offset in both themes (UX-DR23)
+
+**Given** text at 200% zoom and a 320px-wide screen
+**When** the demo shell page is viewed
+**Then** no horizontal scroll appears and no label is truncated (NFR8, UX-DR23)
+
+**Given** the microcopy rules
+**When** a developer adds text
+**Then** the string lives in `messages/en.json` and an automated check fails on a hard-coded UI string in a component (NFR3, UX-DR25)
+
+### Story 1.4: Clinic record and settings store
+
+As an Admin,
+I want my clinic's name, branding and clinical configuration stored as settings,
+So that nothing specific to one clinic lives in code and the clinic's rules can be edited later.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** `clinics` and `clinic_settings` tables exist, owned by the `settings` module, each with `clinic_id`, row-level security and policies that check the clinic before the role (AR3, AR4, AR8)
+**And** `clinic_settings` holds versioned sections (branding, terminology, check-in questions, flag rules, consent text versions, templates), each validated by a Zod schema on read and write (AR9)
+
+**Given** the seed
+**When** it runs
+**Then** one clinic, "Ayurvedgram (demo)", exists with default terminology, five sample check-in questions, a sample flag-rule set labelled "Sample rules. Not clinical advice." and sample consent wording labelled "Sample wording. Not legal text." (FR-8, FR-16, FR-38 groundwork)
+**And** running the seed twice leaves the same data (FR-48)
+
+**Given** two clinic rows in the test database
+**When** Staff of Clinic X read `clinic_settings`
+**Then** they receive no rows of Clinic Y and cannot write them (FR-4)
+
+**Given** the write policies
+**When** an Admin writes the branding or terminology sections
+**Then** the write succeeds
+**And** an Admin writing the check-in questions or flag rules is refused, a Doctor writing the flag rules succeeds, and a Coordinator writing any section is refused (FR-8)
+
+**Given** a settings read from application code
+**When** any module needs clinic content
+**Then** it reads through `modules/settings` only, and a lint rule fails the build on a direct query of `clinic_settings` elsewhere (AR8)
+**And** pgTAP tests for every case above exist and the coverage check from Story 1.2 passes
+
+### Story 1.5: Staff sign-in and roles
+
+As a coordinator, doctor or admin,
+I want to sign in with my email and password and land in the right area,
+So that I reach only what my role allows.
+
+**Acceptance Criteria:**
+
+**Given** a staff account
+**When** the user enters the correct email and password
+**Then** they are signed in and land on the clinic area (FR-1)
+**And** public sign-up is disabled and the token hook gives no role to anyone not provisioned by an Admin (AR16)
+
+**Given** a wrong password
+**When** the user submits
+**Then** a plain message says the email or password is not right, with the same message whether or not the email exists, and the input is kept (FR-1)
+
+**Given** a signed-in user
+**When** the token is issued
+**Then** an auth hook adds `app_role` (one of patient, coordinator, doctor, admin) and `clinic_id` from `app_metadata` without overwriting `role`, and tokens expire in 10 minutes or less (AR5)
+**And** `app.user_role()`, `app.user_clinic()`, `app.user_patient_id()` and `app.is_staff()` are the only helpers policies use, run as invoker, and read claims only (AR17)
+
+**Given** a user whose profile is disabled or whose role was changed
+**When** they use an old token
+**Then** `app.user_role()` treats them as having no role and access ends at once, proven by a pgTAP case (AR5)
+
+**Given** a Patient role
+**When** they request any clinic route
+**Then** they receive "You do not have access to this page." with a link to their home and no detail about records (FR-3)
+
+**Given** a Coordinator
+**When** they attempt to write a Note or a Medicine through the database
+**Then** the write is refused by policy, per the capability matrix in `supabase/capability-matrix.json` (FR-3, AR10)
+**And** the `profiles` table has policies and isolation tests (AR18)
+
+### Story 1.6: Clinic area shell and an empty Today
+
+As a coordinator or doctor,
+I want a navigation shell that works on my phone and my laptop and a Today screen,
+So that I always know where I am and what to open next.
+
+**Acceptance Criteria:**
+
+**Given** a signed-in staff user on a phone under 600px
+**When** the clinic area loads
+**Then** a bottom bar shows Today, Patients, Review (Doctor) or Plans (Coordinator), and More, each with an icon and a label, the current item marked with a bar and bold label (UX-DR9)
+
+**Given** a laptop at 1024px or wider
+**When** the clinic area loads
+**Then** a 240px sidebar shows the same items plus Settings and the clinic name, with a list-and-detail layout available to later screens (UX-DR10, UX-DR24)
+**And** Admin sees People and Clinic settings under More; Coordinator and Doctor do not see items they cannot use (UX-DR28)
+
+**Given** the Today screen
+**When** there is nothing to show
+**Then** it says "Nothing needs attention." with the clinic name from settings (UX-DR21)
+**And** it shows a loading skeleton with the word "Loading" while data loads (UX-DR21)
+
+**Given** the same staff user on phone and laptop
+**When** they perform the available actions
+**Then** the same data and the same actions are present on both (NFR2)
+**And** keyboard users can reach every item with Tab and see the focus ring (UX-DR23, UX-DR26)
+
+### Story 1.7: Admin sets clinic branding and terminology
+
+As an Admin,
+I want to set my clinic's name, branding and terminology labels,
+So that the app speaks my clinic's language without anyone changing code.
+
+**Acceptance Criteria:**
+
+**Given** a signed-in Admin
+**When** they open More, Settings, Clinic
+**Then** they can edit the clinic name, brand colours within accessible limits and terminology labels, each validated by its schema (FR-8)
+
+**Given** a changed terminology label
+**When** the Admin saves
+**Then** the new label shows on the screens that use it on the next load, with no code change (FR-8, BR-11)
+**And** no screen text names Ayurvedgram except through Clinic Settings (FR-8)
+
+**Given** a brand colour that fails the contrast check for text on its background
+**When** the Admin tries to save
+**Then** the save is refused with a message naming the colour and the required contrast (NFR8)
+
+**Given** a Coordinator or Doctor
+**When** they request the Clinic settings screen or call the save
+**Then** they are refused, with the screen hidden from their navigation and the write refused by policy (FR-8, FR-3)
+**And** a failed save keeps the Admin's input and says what to do next (UX-DR21)
+
+### Story 1.8: Installable app and offline shell
+
+As a patient or staff member,
+I want to add the app to my phone's home screen and still see a clear message when I am offline,
+So that it opens like an app and never shows stale health information.
+
+**Acceptance Criteria:**
+
+**Given** a phone browser
+**When** the user opens the app
+**Then** a web manifest and a minimal service worker make it installable (FR-7, AR24)
+**And** the package and build mode for the service worker (the Serwist package and `next build --webpack` or Turbopack variant) is chosen by a working build and recorded in the README
+
+**Given** the service worker
+**When** it caches files
+**Then** it caches only the app shell, authenticated routes are network-only, and caches are cleared on sign-out (AR20)
+
+**Given** the user is offline
+**When** they open a page
+**Then** the shell loads with "You are offline. Connect to see your information." and no health data is shown (UX-DR21)
+
+**Given** first sign-in
+**When** the user finishes
+**Then** an "Add to home screen" help page explains how, with steps for iPhone and Android (UX-DR27)
+**And** the service worker never stores a response from an authenticated route, proven by a test (AR20)
+
+### Story 1.9: Demo seed and isolation fixtures
+
+As Ravi, the builder,
+I want a repeatable demo data set of invented people and two clinics,
+So that I can demonstrate every journey and the tests have realistic fixtures.
+
+**Acceptance Criteria:**
+
+**Given** a clean local database
+**When** the seed runs
+**Then** it creates, from invented data only, one demo clinic with a Coordinator, a Doctor and an Admin, and, in the test database only, a second clinic with its own staff (FR-48, AR4)
+**And** every name, email, phone and passport number is invented (NFR1)
+
+**Given** the seed
+**When** it runs a second time
+**Then** the data is unchanged and no duplicates appear (FR-48)
+
+**Given** the isolation harness from Story 1.2
+**When** the fixtures are loaded
+**Then** Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y exist for the tests, with patients' rows added by later epics as their tables arrive (FR-5, FR-6)
+
+**Given** a hosted clinic project
+**When** the seed is applied there
+**Then** only the one demo clinic is created and never the second clinic (AR4)
+**And** the seed command refuses to run if the target is not marked as a demo environment (NFR1)
+
+### Story 1.10: Feasibility check: region and sign-in link delivery
+
+As Ravi, the owner,
+I want to know that the planned hosting region and the emailed sign-in link work before building on them,
+So that a wrong assumption is found now, not after several epics.
+
+**Acceptance Criteria:**
+
+**Given** access to the Supabase organisation
+**When** the available regions for new projects are queried
+**Then** whether Mumbai is offered for a new database project is recorded, with the alternative chosen if it is not (AR25, spike S-3)
+
+**Given** a development project in the chosen region and a sandbox SMTP
+**When** a sign-in link and code are requested for a test email address
+**Then** delivery time, link expiry, resend cooldown and whether a mail scanner can consume the link are recorded (spike S-4, AR16)
+**And** the latency from Europe and from Pune to the project is measured and recorded
+
+**Given** the results
+**When** the story completes
+**Then** a short findings note in `docs/spikes/` states each result and any change to the architecture it implies
+**And** no screen or table is added by this story
+
+*Prerequisites that only Ravi can supply: Supabase organisation access and sandbox SMTP credentials.*
+
+### Story 1.11: Feasibility check: phone uploads, HEIC and signed links
+
+As Ravi, the owner,
+I want to know that photos from an iPhone and an Android phone can be uploaded and opened safely,
+So that the Documents epic does not hit a surprise late.
+
+**Acceptance Criteria:**
+
+**Given** a private storage bucket with size and type limits and upsert disallowed
+**When** a JPEG, a PNG, a PDF and an iPhone HEIC photo are uploaded from a phone
+**Then** the result of each is recorded, including whether in-browser conversion of HEIC to JPEG works and how long it takes (spike S-5, AR15)
+
+**Given** a stored file
+**When** a download link is created per click
+**Then** the link works within about 60 seconds and fails after that (AR15)
+**And** a file in another folder cannot be fetched by a different test user
+
+**Given** the results
+**When** the story completes
+**Then** a findings note in `docs/spikes/` records the working approach, the oldest phone tested and any change to Epic 7
+**And** no user-facing screen is added by this story
+
+<!-- NEXT EPIC -->
