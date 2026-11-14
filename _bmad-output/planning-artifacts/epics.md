@@ -303,6 +303,7 @@ So that no later story can ship an unprotected table by accident.
 **Given** the harness
 **When** a test author needs to act as a user
 **Then** helper functions exist to run a statement as an anonymous user, Patient A, Patient B, Staff of Clinic X, Staff of Clinic Y and a demoted user with an old token
+**And** the helpers act as a user by setting the token claims (`app_role`, `clinic_id`, patient) directly in the test session, so tests need no sign-in and can run before the sign-in story exists
 **And** the helpers are documented in `supabase/tests/README.md` (FR-6)
 
 **Given** the conventions for audit later
@@ -369,6 +370,11 @@ So that nothing specific to one clinic lives in code and the clinic's rules can 
 **When** Staff of Clinic X read `clinic_settings`
 **Then** they receive no rows of Clinic Y and cannot write them (FR-4)
 
+**Given** the claim helper functions
+**When** this story is applied
+**Then** `app.user_role()`, `app.user_clinic()`, `app.user_patient_id()` and `app.is_staff()` exist as invoker functions that read only the token claims `app_role`, `clinic_id` and the patient link, and the policies in this story use them (AR5, AR17)
+**And** the sign-in hook that puts those claims in a real token and the active-profile check are added by Story 1.5
+
 **Given** the write policies
 **When** an Admin writes the branding or terminology sections
 **Then** the write succeeds
@@ -399,7 +405,7 @@ So that I reach only what my role allows.
 **Given** a signed-in user
 **When** the token is issued
 **Then** an auth hook adds `app_role` (one of patient, coordinator, doctor, admin) and `clinic_id` from `app_metadata` without overwriting `role`, and tokens expire in 10 minutes or less (AR5)
-**And** `app.user_role()`, `app.user_clinic()`, `app.user_patient_id()` and `app.is_staff()` are the only helpers policies use, run as invoker, and read claims only (AR17)
+**And** the helper functions from Story 1.4 remain the only way policies read claims, run as invoker and read claims only; this story extends `app.user_role()` to require an active profile (AR5, AR17)
 
 **Given** a user whose profile is disabled or whose role was changed
 **When** they use an old token
@@ -433,7 +439,7 @@ So that I always know where I am and what to open next.
 **Given** a laptop at 1024px or wider
 **When** the clinic area loads
 **Then** a 240px sidebar shows the same items plus Settings and the clinic name, with a list-and-detail layout available to later screens (UX-DR10, UX-DR24)
-**And** Admin sees People and Clinic settings under More; Coordinator and Doctor do not see items they cannot use (UX-DR28)
+**And** More shows only the items that exist at this point, and each later story that adds a screen (Clinic settings in Story 1.7, People in Story 1.12, Updates in Story 3.1) adds its item for the roles allowed to use it, so no role sees a dead link or an item it cannot use (UX-DR28)
 
 **Given** the Today screen
 **When** there is nothing to show
