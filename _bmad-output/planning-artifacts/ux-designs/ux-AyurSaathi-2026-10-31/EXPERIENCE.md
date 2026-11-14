@@ -240,7 +240,7 @@ Failure: Anna is in a different time zone. Every time shows Anna's local time wi
 ### Flow 6 — Meera and Dr. A record the journey (UJ-6)
 
 1. Meera logs the WhatsApp enquiry and the first Quotation on Before arrival.
-2. Dr. A logs the assessment call and its outcome, marking the findings Staff-only and the outcome summary Shared.
+2. Dr. A logs the assessment call, its findings and its outcome, and marks the assessment Shared or Staff-only (one setting for the whole assessment).
 3. Meera records the Programme and the deposit received.
 4. After care, Meera records treatments given and the departure assistance.
 5. **Climax:** each step moves the Episode forward and the phase history on Overview reads as a complete record in order.

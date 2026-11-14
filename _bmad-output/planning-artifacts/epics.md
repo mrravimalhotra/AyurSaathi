@@ -1,6 +1,6 @@
 ---
 status: draft
-stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories']
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/prd.md
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/addendum.md
@@ -1728,4 +1728,327 @@ So that documents are proven safe, not assumed.
 **When** Ravi follows it with a real iPhone photo and an Android photo
 **Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (FR-17, NFR2)
 
-<!-- NEXT EPIC -->
+## Epic 8: Before arrival: enquiry, assessment, planning
+
+Staff log the enquiry and quotations, the Doctor logs the assessment, and staff record the programme and payments, so the patient's history is complete from the first contact. Covers FR-20, FR-21, FR-22, FR-23, FR-24. The `enquiry` module owns `enquiries` and `quotations`, `assessment` owns `assessments`, `planning` owns `programmes` and `payments` (AR8). First contact, quotations and assessment calls stay on WhatsApp, email and phone; the app records the outcome and lineage (BR-01). Enquiries, quotations, the programme and payments are staff-only in the prototype because the PRD gives the patient no view of them; only assessments marked Shared reach the patient.
+
+### Story 8.1: Log an enquiry
+
+As a coordinator,
+I want to log an enquiry that came in on WhatsApp, email or phone,
+So that the first contact is recorded against the patient.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `enquiries` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, date, channel (WhatsApp, email, phone or other), summary, treatment interest and who handled it, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient can never read an enquiry, and Staff of Clinic X cannot read Clinic Y's (FR-5, FR-4)
+
+**Given** the patient record's Before arrival tab
+**When** Staff open it
+**Then** it shows an Enquiry section, with "Nothing logged yet." when empty (FR-20, UX-DR21)
+**And** Staff can add an enquiry with the date, channel, summary, treatment interest and handler, and the summary is required with the message "Add a short summary of the enquiry." (FR-20)
+
+**Given** a returning patient whose new episode starts at Assessment or Planning
+**When** the Before arrival tab opens
+**Then** no enquiry is required or prompted (FR-20, BR-04)
+
+**Given** an enquiry is saved on an episode in the Enquiry phase
+**When** the screen confirms
+**Then** it offers "Move to Assessment" which calls `move_phase` only if Staff confirm, and nothing moves otherwise (FR-10, AR14) `[ASSUMPTION: moves are offered, not automatic]`
+**And** the same screen works on a phone and a laptop (NFR2)
+
+### Story 8.2: Log quotations
+
+As a coordinator,
+I want to log each quotation I sent, with its versions,
+So that what was offered and accepted is on the record.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `quotations` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, a version, date sent, amount in minor units, currency, validity date and status (sent, accepted, revised or lapsed), with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** versions are unique and increasing within an episode, and a Patient cannot read a quotation (FR-21, FR-5)
+
+**Given** the Quotation section
+**When** Staff add a quotation
+**Then** the next version number is set automatically, and an amount that is not greater than zero is refused with "Enter an amount greater than zero." (FR-21)
+**And** a validity date not after the date sent is refused with a message that says why (FR-21)
+
+**Given** a currency
+**When** an amount is saved and shown
+**Then** it is stored as an integer in minor units and displayed using that currency's number of decimal places through `lib/money` (AR11 conventions)
+**And** an amount typed with the wrong number of decimals is refused or rounded as the message states, tested for a two-decimal and a zero-decimal currency
+
+**Given** a quotation
+**When** Staff mark it accepted
+**Then** earlier versions of the same episode show as revised, and only one is accepted at a time (FR-21)
+**And** an existing document can optionally be linked to the quotation (FR-21, FR-18)
+
+### Story 8.3: Log an assessment
+
+As a doctor,
+I want to log how and when I assessed a patient and what I found,
+So that the outcome is recorded wherever the assessment took place.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** an `assessments` table exists, owned by the `assessment` module, with `clinic_id`, the episode, date, method (in person, WhatsApp call, phone, video or email), the doctor, findings, outcome and `visibility` of `shared` or `staff_only`, with row-level security and pgTAP tests (AR3, AR8, AR10, AR18)
+**And** a Patient reads only `shared` assessments of their own episode, a Coordinator reads `shared` ones only, and only a Doctor writes (FR-22, FR-3, FR-5)
+
+**Given** the Before arrival tab
+**When** a Doctor adds an assessment
+**Then** date, method, findings and outcome are required, the clinical content is free text because structured fields wait for the Doctor's input, and the visibility toggle defaults to Staff-only with the words stated (FR-22, UX-DR8) `[ASSUMPTION: one visibility setting for the whole assessment, as the PRD states]`
+**And** the app does not change how the assessment is done, so no scheduling or interpretation is offered (FR-22, BR-06)
+
+**Given** an assessment marked Shared
+**When** the patient opens their record
+**Then** they see the date, method and outcome that the Doctor chose to share, and for a Staff-only assessment they see nothing (FR-5, FR-22)
+
+**Given** an assessment is saved on an episode in the Assessment phase
+**When** the screen confirms
+**Then** it offers "Move to Planning" which calls `move_phase` only if Staff confirm (FR-10, AR14)
+
+### Story 8.4: Record the programme and cost
+
+As a coordinator or doctor,
+I want to record the programme and approximate cost agreed before travel,
+So that everyone knows what was settled and it can be refined on arrival.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `programmes` table exists, owned by the `planning` module, with `clinic_id`, the episode, programme name, duration in days, treatments, diet approach, approximate cost in minor units, currency, status (provisional, confirmed or refined on arrival) and the accepted quotation, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient cannot read a programme, and one programme is active per episode (FR-23, FR-5)
+
+**Given** the Before arrival tab
+**When** Staff record a programme
+**Then** it can link only to an accepted quotation of the same episode, and a quotation from another episode is refused (FR-23, BR-05)
+**And** the status can be changed to refined on arrival by the Doctor after the patient arrives, with the change kept in history (FR-23, BR-05)
+
+**Given** an approximate cost
+**When** it is shown
+**Then** it is labelled "Approximate" and uses the currency's decimal places (FR-23)
+
+**Given** a programme is saved on an episode in the Planning phase
+**When** the screen confirms
+**Then** it offers "Move to Arrival" which calls `move_phase` only if Staff confirm (FR-10, AR14)
+**And** Staff of Clinic X cannot read Clinic Y's programmes, proven by pgTAP (FR-4)
+
+### Story 8.5: Record payments received
+
+As a coordinator,
+I want to record deposits and balances the clinic has received,
+So that the clinic's record of money received is in one place, without taking payments in the app.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `payments` table exists, owned by the `planning` module, with `clinic_id`, the episode, kind (deposit, balance or other), amount in minor units, currency, date received, method, who recorded it and a note, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** no card number or bank detail is ever stored, and a Patient cannot read a payment (FR-24, FR-5)
+
+**Given** the Before arrival tab
+**When** Staff add a payment
+**Then** amount, currency and date are required with plain messages, and the list shows each payment and the total received per currency (FR-24)
+**And** when a programme exists in the same currency the section shows "Received 500.00 EUR of approximately 2,400.00 EUR", never mixing currencies (FR-24, FR-23)
+
+**Given** a payment recorded in error
+**When** Staff remove it
+**Then** a confirmation names the amount and date, the row is hidden with `deleted_at` and stays in history (UX-DR26)
+
+**Given** the app
+**When** any screen is reviewed
+**Then** there is no online payment, no payment link and no card form anywhere (FR-24, NFR1)
+
+### Story 8.6: Walk the before-arrival journey
+
+As Ravi, the owner,
+I want to walk Anna's history from first enquiry to deposit in one repeatable run,
+So that the record is proven complete and private.
+
+**Acceptance Criteria:**
+
+**Given** a clean demo database
+**When** the end-to-end test for the before-arrival part of UJ-6 runs
+**Then** a coordinator logs the WhatsApp enquiry and the first quotation, a doctor logs the assessment call and its outcome as Shared, the coordinator records the programme linked to the accepted quotation and the deposit, and each offered phase move is confirmed so the Overview history reads in order (UJ-6, FR-20 to FR-24, FR-10)
+**And** the patient signs in and sees only the Shared assessment and nothing else from this epic (FR-5)
+
+**Given** the run
+**When** it completes
+**Then** the isolation suite passes for every table added in this epic, including Patient A against Patient B and Clinic X against Clinic Y, and the coverage check finds no untested object (FR-4, FR-5, FR-6, AR18)
+**And** a written demo script is saved in `docs/demo/before-arrival.md` for Ravi to follow by hand
+
+**Given** the demo script
+**When** Ravi follows it on a phone and a laptop
+**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
+
+
+## Epic 9: Continuity
+
+After departure the clinic logs departure assistance and schedules follow-up check-ins, the patient answers them and can request an extra consultation, and consultations are logged. Covers FR-40, FR-41, FR-42, FR-43, FR-44. The `continuity` module owns `departure_assistance`, `follow_up_schedules`, `consultations` and `consultation_requests`; follow-up check-ins are rows in the `care` module's `check_ins` table created by `care`'s `create_due_check_in` (AR8, AR13). Check-ins are initiated by the clinic's schedule, never by the patient (BR-03).
+
+### Story 9.1: Log departure assistance
+
+As a coordinator,
+I want to log the travel help I arranged when the patient leaves,
+So that the end of the visit is on the record.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `departure_assistance` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date, what was arranged and who arranged it, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient cannot read it and Staff of Clinic X cannot read Clinic Y's (FR-40, FR-5, FR-4)
+
+**Given** the patient record's After tab
+**When** Staff add an entry
+**Then** the date and what was arranged are required with plain messages, and entries list newest first (FR-40, UX-DR21)
+**And** with none, the section says "Nothing logged yet." (UX-DR21)
+
+**Given** a patient whose episode is in the Care phase
+**When** departure assistance is saved
+**Then** the screen offers "Move to Continuity" which calls `move_phase` only if Staff confirm (FR-10, AR14)
+**And** the After tab works the same on a phone and a laptop (NFR2)
+
+### Story 9.2: Schedule follow-up check-ins
+
+As a coordinator or doctor,
+I want to schedule follow-up check-ins for a patient who has gone home,
+So that the clinic, not the patient, decides when to ask.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `follow_up_schedules` table exists, owned by the `continuity` module, with `clinic_id`, the episode, start date, a list of dates or a repeat rule, the patient's time zone and a status, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** only Staff write schedules and a Patient cannot read or write one (FR-41, BR-03, FR-5)
+
+**Given** the After tab
+**When** Staff create a schedule
+**Then** they can pick a list of dates or "every N days for M check-ins", at a local time of day for the patient, with a preview of the dates in the patient's time zone and in the clinic's (FR-41, FR-47)
+**And** follow-up templates from the Doctor are not offered yet, because they wait on the Doctor's input `[ASSUMPTION: free scheduling only until templates are provided]` (FR-41)
+
+**Given** a confirmed schedule
+**When** the hourly database job runs
+**Then** it calls `care`'s `create_due_check_in` for each date now due, which creates exactly one follow-up check-in per episode and date and raises the patient notification "Your follow-up check-in is ready." with no health content (FR-41, AR12, AR13)
+**And** running the job twice in the same window creates nothing new, proven by a test (FR-41, NFR7)
+
+**Given** a patient in a different time zone
+**When** a check-in becomes due
+**Then** its local date and time are computed in the patient's zone and stored in UTC, including across a daylight-saving change (FR-41, AR11)
+
+**Given** a schedule
+**When** Staff cancel it
+**Then** a confirmation names the schedule, and check-ins not yet created are not created, while those already answered are kept (UX-DR26)
+
+### Story 9.3: The patient answers a follow-up check-in
+
+As a patient who has gone home,
+I want to answer a short follow-up check-in about how I feel, my medicine and my diet,
+So that my doctor still knows how I am doing.
+
+**Acceptance Criteria:**
+
+**Given** a follow-up check-in is due for the patient
+**When** they open the link in the notification and sign in, or open Check-in
+**Then** the same one-question-per-screen flow as the daily check-in runs, using the clinic's follow-up questions from settings (default: the same five), ending with a review screen and Send (FR-42, UX-DR18)
+**And** the patient can report how they feel, confirm medicines taken and flag a diet issue in free text (FR-42)
+
+**Given** the patient sends the answers
+**When** they are saved
+**Then** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and the emergency line, and the check-in enters the Doctor's Review Queue like any other (FR-42, FR-37, UX-DR22)
+**And** the flag function from Story 6.2 evaluates it with the clinic's rules, and the patient is never shown a flag (FR-38, BR-06)
+
+**Given** no follow-up is due
+**When** the patient opens Check-in
+**Then** they see the next scheduled date in their local time and no way to start one themselves (BR-03, UX-DR21)
+
+**Given** a patient whose sign-in link has expired
+**When** they request a new one from the sign-in screen
+**Then** they can sign in as in Story 3.6, so a patient who left months ago can still answer (FR-2)
+**And** Patient A cannot read or answer Patient B's follow-up, proven by pgTAP and an end-to-end test (FR-5, AR18)
+
+### Story 9.4: Log consultations
+
+As a doctor or coordinator,
+I want to log the WhatsApp and phone consultations given after the patient is home,
+So that care that happened outside the app is still on the record.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `consultations` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date and time, channel (WhatsApp call, WhatsApp video, phone, video or other), the doctor and a summary, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient cannot read it and Staff of Clinic X cannot read Clinic Y's (FR-43, FR-5, FR-4)
+
+**Given** the After tab
+**When** a Doctor or Coordinator logs a consultation
+**Then** the date, channel and summary are required with plain messages, and it appears in the episode history in date order (FR-43)
+**And** a consultation can be linked to a request from Story 9.5 once that exists, without requiring it (FR-43, FR-44)
+
+**Given** a Coordinator
+**When** they log a consultation
+**Then** they can, and the Doctor field names the doctor who gave it, because the app never records a consultation as given by someone who did not give it (FR-43)
+
+### Story 9.5: The patient requests an extra consultation
+
+As a patient,
+I want to ask my clinic for an extra consultation and see their answer,
+So that I can get help without searching for the right WhatsApp chat.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `consultation_requests` table exists, owned by the `continuity` module, with `clinic_id`, the episode, requested time, preferred window with the patient's zone, reason, a status (requested, approved, declined or done), who handled it and an optional link to the logged consultation, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** a Patient can create and read only their own requests and cannot change a status (FR-44, FR-5)
+
+**Given** the patient's Home or Plan
+**When** they tap Request a consultation
+**Then** they choose a preferred day and time window, give a reason of up to 1,000 characters and send it, and the request shows "Waiting for the clinic" (FR-44, UX-DR22)
+**And** the screen states it is not for emergencies and shows the clinic phone and the emergency line (UX-DR22, BR-06)
+
+**Given** a new request
+**When** it is saved
+**Then** an alert is raised for the coordinators through `app.emit_event` with a `dedupe_key` and appears in the needs-attention block with the patient name and time (FR-9, FR-44, AR12)
+**And** the endpoint is rate limited (AR21)
+
+**Given** Staff open the request
+**When** they approve it with a confirmed time or decline it with a short reason
+**Then** the status changes, the alert resolves, and the patient is notified with no health content, seeing "Approved for Thursday 19 Nov, 16:00 your time" or "Declined: <reason>" (FR-44, UX-DR20)
+
+**Given** the consultation takes place
+**When** Staff log it
+**Then** the request can be marked done and linked to the consultation, and the patient sees "Done" (FR-43, FR-44)
+**And** a patient sees only their own requests and their statuses, proven by pgTAP (FR-5)
+
+### Story 9.6: Walk the follow-up journey and finish the After tab
+
+As Ravi, the owner,
+I want to walk Anna's follow-up from the scheduled check-in to the logged consultation in one repeatable run,
+So that the journey from enquiry to follow-up is proven end to end.
+
+**Acceptance Criteria:**
+
+**Given** a clean demo database
+**When** the end-to-end test for UJ-4 runs
+**Then** a coordinator schedules a follow-up, the hourly job creates the check-in, the patient signs in by emailed link, answers and sends it, requests an extra consultation, the coordinator approves it, and after the call the consultation is logged and the request marked done (UJ-4, FR-40 to FR-44)
+**And** the same run covers a patient in a different time zone and the case where the sign-in link has expired and a new one is requested (UJ-4, FR-2)
+
+**Given** the run
+**When** it completes
+**Then** the isolation suite passes for every table added in this epic, and the whole-product suite passes across all nine epics, including Patient A against Patient B and Clinic X against Clinic Y, with no object lacking a test (FR-4, FR-5, FR-6, AR18)
+**And** the After tab shows departure assistance, the follow-up schedule, consultations and requests together, working on phone and laptop (NFR2)
+
+**Given** the full demo
+**When** Ravi follows the combined demo script saved in `docs/demo/full-journey.md` from enquiry to follow-up
+**Then** every step works as written, and any step that does not is recorded as a defect (NFR2)
+**And** the prototype acceptance criteria are checked: the full demo journey works end to end, and isolation is proven by tests (brief, SM-1, SM-2)
+
+<!-- END OF EPICS -->
