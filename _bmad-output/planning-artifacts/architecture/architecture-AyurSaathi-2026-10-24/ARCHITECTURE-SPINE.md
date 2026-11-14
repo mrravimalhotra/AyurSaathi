@@ -331,7 +331,7 @@ tests/e2e/         Playwright
 - **Environments:** local (Supabase CLI plus Mailpit), pull-request preview, and the hosted clinic project with its deployment. Each clinic has its own environment variables; secrets live in the host's secret store, never in the repository.
 - **CI/CD:** GitHub Actions run lint, typecheck, unit tests, migration check, policy and test-coverage checks (AD-1, AD-16), pgTAP and Playwright. Releases follow AD-17.
 - **Prototype operations:** a health check route; logs to standard output (AD-18). Backups use the platform's default for the prototype.
-- **Gate before real data (all required):** audit log including read access, staff MFA enforced in policies, lawyer-approved consent and retention, data processing terms with each vendor, region and hosting confirmed, backup and restore tested, key-rotation runbook, a security review.
+- **Gate before real data (all required):** patient rights tools (export, correct, erase), audit log including read access, staff MFA enforced in policies, lawyer-approved consent and retention, data processing terms with each vendor, region and hosting confirmed, backup and restore tested, key-rotation runbook, a security review.
 
 ## Capability → Architecture Map
 

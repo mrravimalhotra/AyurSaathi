@@ -109,6 +109,8 @@ AR25: Mail. Local Mailpit for development; a sandbox SMTP for the hosted prototy
 
 ### UX Design Requirements
 
+AR26: Definition of done for every story. Policies and pgTAP isolation tests ship in the same change as any new table, view, function or bucket (AR16, AR18); the demo seed is extended with invented rows so the journey can be walked (FR-48); every UI string lives in `messages/en.json` (NFR3); status is never colour alone and focus, targets and 200% zoom meet the accessibility floor (NFR8, UX-DR23); no health data is logged (NFR5); the typed Result and idempotency rules of AR7 are followed.
+
 UX-DR1: Design tokens. Implement the DESIGN.md colour tokens for light and dark themes (surface, ink, primary, highlight, status, phase) as theme variables; theme follows the system setting with a user override.
 UX-DR2: Typography. Self-host Atkinson Hyperlegible Next (UI and body) and Source Serif 4 (display and title). Patient body 18px/28px, staff body 16px/24px; labels wrap and never truncate; usable at 200% text zoom.
 UX-DR3: Spacing, radius and elevation tokens (4-48px scale, 8/12/16/full radii; tonal depth, shadows only under the bottom bar and sheets).
@@ -194,7 +196,7 @@ FR-48: Epic 1 - Demo seed
 ### Epic 1: Secure clinic app foundation
 Clinic staff sign in to their own clinic's isolated app, installed on a phone or opened on a laptop, with the clinic's branding. Isolation is proven by tests that grow with every table, a demo data set loads, and the early technical risks (region, link delivery, phone uploads with HEIC and signed links) are checked before anything depends on them.
 **FRs covered:** FR-1, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-48
-**Implementation notes:** Starts with the starter scaffold (AR1), CI, and the pgTAP harness with the coverage check (AR18). Includes the Admin part of FR-8; the Doctor part is in Epic 6. Includes feasibility stories for spikes S-3, S-4 and S-5 with no UI. Delivers: signed-in Today (empty), branding change, green isolation suite.
+**Implementation notes:** Starts with the starter scaffold (AR1), CI, and the pgTAP harness with the coverage check (AR18). Includes the Admin part of FR-8; the Doctor part is in Epic 6. Includes feasibility stories for spikes S-3, S-4 and S-5 with no UI, Admin management of staff users, and the per-clinic release routine (AR19). Delivers: signed-in Today (empty), branding change, staff management, green isolation suite.
 
 ### Epic 2: Patient records and onboarding
 The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter and move patients between phases or start a new episode for a returning patient.
@@ -243,7 +245,7 @@ Clinic staff sign in to their own clinic's isolated app, installed on a phone or
 
 ### Story 1.1: Scaffold the app from the trimmed starter
 
-As Ravi, the builder,
+As a builder,
 I want the app scaffolded from the official Next.js and Supabase starter with versions pinned,
 So that every later story builds on one running, reproducible base.
 
@@ -251,7 +253,7 @@ So that every later story builds on one running, reproducible base.
 
 **Given** an empty repository branch
 **When** the scaffold is created from the official `with-supabase` example
-**Then** `next`, `react`, `@supabase/supabase-js` and `@supabase/ssr` are pinned to exact versions (no `latest`) and Node 24 LTS is set in the project settings
+**Then** `next`, `react`, `@supabase/supabase-js` and `@supabase/ssr` are pinned to exact versions (no `latest`) and Node 24 LTS is set in the project settings, with TypeScript pinned to 5.x, Zod, Vitest, Playwright and the Supabase CLI at the versions in the architecture spine (AR2)
 **And** the sample sign-up and password pages that allow public sign-up are removed, and `lib/supabase` is replaced by `lib/db` (AR1)
 
 **Given** the scaffold
@@ -262,7 +264,8 @@ So that every later story builds on one running, reproducible base.
 **Given** a clean clone and a local Supabase started with the Supabase CLI
 **When** a developer follows the README's three commands
 **Then** the app starts on localhost and shows a public landing page
-**And** environment variables are read from a documented `.env.example`; no secret is committed and the service-role key is not exposed to the browser (AR6)
+**And** environment variables are read from a documented `.env.example`; no secret is committed and the service-role key is not exposed to the browser (AR6, NFR6)
+**And** a `/api/health` route answers that the app is running and returns no data (BRD NFR-10)
 
 **Given** the folder layout in the architecture spine
 **When** the scaffold is inspected
@@ -271,7 +274,7 @@ So that every later story builds on one running, reproducible base.
 
 ### Story 1.2: CI and the isolation test harness
 
-As Ravi, the builder,
+As a builder,
 I want continuous checks that fail the build when a table has no access policy or no isolation test,
 So that no later story can ship an unprotected table by accident.
 
@@ -302,6 +305,14 @@ So that no later story can ship an unprotected table by accident.
 **Then** helper functions exist to run a statement as an anonymous user, Patient A, Patient B, Staff of Clinic X, Staff of Clinic Y and a demoted user with an old token
 **And** the helpers are documented in `supabase/tests/README.md` (FR-6)
 
+**Given** the conventions for audit later
+**When** the coverage check runs
+**Then** it also fails if a clinic-owned table has no `created_at`, `updated_at` or, for clinical and logistics tables, `created_by` column, and if a server action writes data without going through a module action or a SQL function (AR22)
+
+**Given** the logging rule
+**When** lint runs
+**Then** it fails on code that logs a request body, a patient field or a health value, and unexpected errors carry a reference ID only (NFR5, AR20)
+
 ### Story 1.3: Design foundation and the demo shell
 
 As a staff member or patient,
@@ -327,6 +338,10 @@ So that the app feels consistent and invented data cannot be mistaken for real.
 **Given** text at 200% zoom and a 320px-wide screen
 **When** the demo shell page is viewed
 **Then** no horizontal scroll appears and no label is truncated (NFR8, UX-DR23)
+
+**Given** an unexpected error on any screen
+**When** it occurs
+**Then** a safe message appears: "Something went wrong. Your information is safe. Try again. Reference: ABC123." with the reference ID, and no data, stack trace or field value is shown or logged (NFR5, UX-DR21)
 
 **Given** the microcopy rules
 **When** a developer adds text
@@ -390,6 +405,10 @@ So that I reach only what my role allows.
 **When** they use an old token
 **Then** `app.user_role()` treats them as having no role and access ends at once, proven by a pgTAP case (AR5)
 
+**Given** a signed-in user
+**When** they choose Sign out under More
+**Then** the session ends, cached app-shell data is cleared and they return to the sign-in screen (AR20, UX-DR26)
+
 **Given** a Patient role
 **When** they request any clinic route
 **Then** they receive "You do not have access to this page." with a link to their home and no detail about records (FR-3)
@@ -420,6 +439,14 @@ So that I always know where I am and what to open next.
 **When** there is nothing to show
 **Then** it says "Nothing needs attention." with the clinic name from settings (UX-DR21)
 **And** it shows a loading skeleton with the word "Loading" while data loads (UX-DR21)
+
+**Given** More, Settings
+**When** the user chooses a theme
+**Then** System, Light or Dark can be selected and is remembered on that device (UX-DR1)
+
+**Given** a throttled mobile connection typical of the clinic's phones
+**When** Today loads
+**Then** it becomes usable within about 3 seconds (BRD NFR-03)
 
 **Given** the same staff user on phone and laptop
 **When** they perform the available actions
@@ -480,7 +507,7 @@ So that it opens like an app and never shows stale health information.
 
 ### Story 1.9: Demo seed and isolation fixtures
 
-As Ravi, the builder,
+As a builder,
 I want a repeatable demo data set of invented people and two clinics,
 So that I can demonstrate every journey and the tests have realistic fixtures.
 
@@ -506,7 +533,7 @@ So that I can demonstrate every journey and the tests have realistic fixtures.
 
 ### Story 1.10: Feasibility check: region and sign-in link delivery
 
-As Ravi, the owner,
+As a product owner,
 I want to know that the planned hosting region and the emailed sign-in link work before building on them,
 So that a wrong assumption is found now, not after several epics.
 
@@ -530,7 +557,7 @@ So that a wrong assumption is found now, not after several epics.
 
 ### Story 1.11: Feasibility check: phone uploads, HEIC and signed links
 
-As Ravi, the owner,
+As a product owner,
 I want to know that photos from an iPhone and an Android phone can be uploaded and opened safely,
 So that the Documents epic does not hit a surprise late.
 
@@ -549,6 +576,59 @@ So that the Documents epic does not hit a surprise late.
 **When** the story completes
 **Then** a findings note in `docs/spikes/` records the working approach, the oldest phone tested and any change to Epic 7
 **And** no user-facing screen is added by this story
+
+### Story 1.12: Admin manages staff users
+
+As an Admin,
+I want to add staff, set their role and remove their access,
+So that only the right people can use the clinic area.
+
+**Acceptance Criteria:**
+
+**Given** an Admin
+**When** they open More, Settings, People
+**Then** a list shows each staff member's name, email, role and whether the account is Active or Disabled (FR-3, UX-DR28)
+
+**Given** the Add staff form
+**When** the Admin enters a name, an email and a role (coordinator, doctor or admin)
+**Then** the account is created through `lib/privileged` with the clinic taken from the Admin's verified token, never from input, and the role and clinic stored in `app_metadata` (AR6, AR5)
+**And** the new staff member receives an email to set their own password, which locally appears in Mailpit (FR-1)
+
+**Given** a staff member's role is changed or the account is disabled
+**When** the Admin confirms, with a confirmation that names the person
+**Then** access ends or changes at once for policy checks and within the token lifetime for any token already issued, and a pgTAP case proves a demoted user's old token no longer works (AR5, AR18)
+**And** the last Admin cannot be demoted or disabled, and an Admin cannot change their own role, each with a message that says why (FR-3)
+
+**Given** a Coordinator or Doctor
+**When** they request People or call its actions
+**Then** the screen is hidden from their navigation and the writes are refused by policy (FR-3, AR10)
+**And** staff of Clinic X cannot list or change staff of Clinic Y, proven by pgTAP on `profiles` (FR-4, AR18)
+
+### Story 1.13: Release routine and clinic manifest
+
+As a builder,
+I want one repeatable routine that updates every clinic's database before its app,
+So that clinic projects never drift apart.
+
+**Acceptance Criteria:**
+
+**Given** `clinics.json`
+**When** it is read
+**Then** it lists each clinic's name, Supabase project reference and deployment name and contains no secret (AR19)
+
+**Given** a release
+**When** the release command runs
+**Then** it checks CI passed, applies pending migrations to every project in the manifest, and only then deploys that clinic's app, stopping at the first failure and naming the clinic that failed (AR19)
+**And** a dry-run option lists what would change for each clinic without changing anything
+
+**Given** the migrations folder
+**When** CI runs
+**Then** a check fails any change to a migration file that has already been released, because changes are forward-fix only (AR19)
+
+**Given** a manifest with one clinic and one with two clinics
+**When** the dry run is executed against each
+**Then** both work, so adding a second clinic needs no change to the routine (AR2, AR19)
+**And** the steps are documented in the README for someone other than Ravi to follow (AR19)
 
 ## Epic 2: Patient records and onboarding
 
@@ -989,6 +1069,10 @@ So that I know what happens next without searching WhatsApp.
 **Then** they list newest first with "New" in words, and opening one marks it read, with a Patient seeing only their own (FR-45, FR-5)
 **And** the footer shows the clinic phone and "In an emergency, call your local emergency number." (UX-DR22)
 
+**Given** the Settings link in the Home header
+**When** the patient opens it
+**Then** they can choose the theme (System, Light or Dark) and Sign out, which ends the session and clears the app shell cache (UX-DR1, AR20)
+
 **Given** a phone under 600px and a laptop
 **When** Home is viewed
 **Then** it is one column up to 560px wide, centred, at 18px body text and usable at 200% zoom without truncated labels (UX-DR2, UX-DR24, UX-DR23)
@@ -1153,7 +1237,7 @@ So that I can re-plan the pickup in time.
 
 ### Story 4.7: Walk the arrival journey end to end
 
-As Ravi, the owner,
+As a product owner,
 I want to walk Anna's arrival journey from invite to landed in one repeatable run,
 So that the walking skeleton is proven working, not assumed.
 
@@ -1163,6 +1247,7 @@ So that the walking skeleton is proven working, not assumed.
 **When** the end-to-end test for UJ-1 runs
 **Then** a coordinator creates a patient with an invite, the invite arrives in Mailpit, the patient redeems it on a phone-sized browser, Home shows the journey bar, the patient adds a flight, sees the pickup and stay the coordinator entered, taps "I have landed", and the coordinator's Today shows the alert (UJ-1, FR-1 to FR-30)
 **And** the test also runs the failure case, where the link is used by a mail scanner first and the patient signs in with the typed code instead (UJ-1)
+**And** the end-to-end suite runs in Chromium, Firefox and WebKit at phone and laptop sizes, covering the current Chrome, Safari, Edge and Firefox (BRD NFR-12)
 
 **Given** the run
 **When** it completes
@@ -1411,6 +1496,7 @@ So that my doctor knows how my treatment is going.
 **Given** an already submitted check-in, another patient's, or a staff user
 **When** a write is attempted
 **Then** it is refused by policy, so a submitted check-in cannot be edited and Patient A cannot read or write Patient B's, proven by pgTAP (FR-5, AR18)
+**And** a five-question check-in can be completed and sent in under a minute, measured in the end-to-end run (BRD NFR-03)
 **And** when no check-in is due the tab says "Your next check-in is Friday 13 November at 08:00." in the patient's local time (UX-DR21, UX-DR20)
 
 ### Story 6.2: Flag evaluation with sample rules
@@ -1538,7 +1624,7 @@ So that the check-in asks what I care about and flags what I decide.
 
 ### Story 6.6: Walk the check-in and review journey
 
-As Ravi, the owner,
+As a product owner,
 I want to walk Dr. A's morning review from the patient's check-in to the reviewed note in one repeatable run,
 So that the whole care loop is proven working.
 
@@ -1708,7 +1794,7 @@ So that the record is correct and complete without extra steps.
 
 ### Story 7.6: Walk the documents journey
 
-As Ravi, the owner,
+As a product owner,
 I want to walk adding a passport photo and sharing a record in one repeatable run,
 So that documents are proven safe, not assumed.
 
@@ -1868,7 +1954,7 @@ So that the clinic's record of money received is in one place, without taking pa
 
 ### Story 8.6: Walk the before-arrival journey
 
-As Ravi, the owner,
+As a product owner,
 I want to walk Anna's history from first enquiry to deposit in one repeatable run,
 So that the record is proven complete and private.
 
@@ -1990,7 +2076,7 @@ So that care that happened outside the app is still on the record.
 **Given** the After tab
 **When** a Doctor or Coordinator logs a consultation
 **Then** the date, channel and summary are required with plain messages, and it appears in the episode history in date order (FR-43)
-**And** a consultation can be linked to a request from Story 9.5 once that exists, without requiring it (FR-43, FR-44)
+**And** a consultation has an optional link field to a consultation request, left empty here and filled by the next story (FR-43, FR-44)
 
 **Given** a Coordinator
 **When** they log a consultation
@@ -2030,7 +2116,7 @@ So that I can get help without searching for the right WhatsApp chat.
 
 ### Story 9.6: Walk the follow-up journey and finish the After tab
 
-As Ravi, the owner,
+As a product owner,
 I want to walk Anna's follow-up from the scheduled check-in to the logged consultation in one repeatable run,
 So that the journey from enquiry to follow-up is proven end to end.
 

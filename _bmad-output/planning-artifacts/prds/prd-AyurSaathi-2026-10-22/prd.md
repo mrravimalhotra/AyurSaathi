@@ -555,7 +555,7 @@ An end-to-end working prototype of the six Phases on invented data: access, role
 - **Reliability:** scheduled jobs are idempotent. Retried actions do not duplicate.
 - **Accessibility:** status is never shown by colour alone.
 
-**Gate before real patient data (all required):** legal review of consent, GDPR and DPDP, with approved Consent wording and retention periods; audit log; staff MFA; isolation suite passing; hosting region confirmed; sponsor and doctor engaged at Ayurvedgram.
+**Gate before real patient data (all required):** legal review of consent, GDPR and DPDP, with approved Consent wording and retention periods; patient rights tools (export, correct and erase on request); audit log; staff MFA; isolation suite passing; hosting region confirmed; sponsor and doctor engaged at Ayurvedgram.
 
 **Platform:** web app installable on a phone. Stack (Next.js, Vercel, Supabase) and India hosting are decided, recorded in the addendum.
 
