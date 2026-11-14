@@ -109,7 +109,7 @@ AR25: Mail. Local Mailpit for development; a sandbox SMTP for the hosted prototy
 
 ### UX Design Requirements
 
-AR26: Definition of done for every story. Policies and pgTAP isolation tests ship in the same change as any new table, view, function or bucket (AR16, AR18); the demo seed is extended with invented rows so the journey can be walked (FR-48); every UI string lives in `messages/en.json` (NFR3); status is never colour alone and focus, targets and 200% zoom meet the accessibility floor (NFR8, UX-DR23); no health data is logged (NFR5); the typed Result and idempotency rules of AR7 are followed.
+AR26: Definition of done for every story. Policies and pgTAP isolation tests ship in the same change as any new table, view, function or bucket (AR16, AR18); the demo seed is extended with invented rows so the journey can be walked (FR-48); every UI string lives in `messages/en.json` (NFR3); status is never colour alone and focus, targets and 200% zoom meet the accessibility floor (NFR8, UX-DR23); no health data is logged (NFR5); the typed Result and idempotency rules of AR7 are followed; every patient route passes the automated accessibility check; events are raised only by triggers and named SQL functions; patients write only through named SQL functions, never directly to a table.
 
 UX-DR1: Design tokens. Implement the DESIGN.md colour tokens for light and dark themes (surface, ink, primary, highlight, status, phase) as theme variables; theme follows the system setting with a user override.
 UX-DR2: Typography. Self-host Atkinson Hyperlegible Next (UI and body) and Source Serif 4 (display and title). Patient body 18px/28px, staff body 16px/24px; labels wrap and never truncate; usable at 200% text zoom.
@@ -130,7 +130,7 @@ UX-DR16: Day Plan builder. Date strip, "Copy yesterday", items grouped Morning, 
 UX-DR17: Medicine row. Name, dose, schedule and a "Taken" toggle that reads "Taken at 08:10"; patient can undo within 10 minutes.
 UX-DR18: Check-in flow. One question per screen with "Question N of 5", large answer buttons, Back at every step, a review screen before Send; score anchors in words; free text with a 1,000-character counter.
 UX-DR19: Review Queue UI. Flagged first with the rule in words and a "Sample rule" badge; review pane with answers, recent notes and medicines; Add note (Shared or Staff-only), Change medicine, Mark reviewed.
-UX-DR20: Time display. "Thu 12 Nov, 14:35 IST" with the clinic time in brackets when the viewer's zone differs.
+UX-DR20: Time display. "Thu 12 Nov, 14:35 CET (Pune 19:05)", where the bracketed city label and zone come from Clinic Settings, shown when the viewer's zone differs from the clinic's. Arrival times are shown in the arrival airport's local time.
 UX-DR21: State patterns. Loading skeletons with the word "Loading"; empty states with next action; field and action errors that keep input; forbidden; offline banner; session-expired return; link-or-code problem message and resend cooldown; check-in done and not-due states.
 UX-DR22: Safety copy. Clinic phone and "in an emergency call your local emergency number" on Check-in, Plan footer and the "I need help" screen; check-in confirmation "Received. Your doctor reviews check-ins each day."; flagged status is never shown to the patient; sample flag rules labelled.
 UX-DR23: Accessibility floor. 3px focus ring with 2px offset on every focusable element; live-region announcements for status changes; 48px minimum and 8px spacing of targets; 320px width and 200% text without horizontal scroll; focus to first error; journey bar read as "Step 4 of 6, Arrival, now".
@@ -196,12 +196,12 @@ FR-48: Epic 1 - Demo seed
 ### Epic 1: Secure clinic app foundation
 Clinic staff sign in to their own clinic's isolated app, installed on a phone or opened on a laptop, with the clinic's branding. Isolation is proven by tests that grow with every table, a demo data set loads, and the early technical risks (region, link delivery, phone uploads with HEIC and signed links) are checked before anything depends on them.
 **FRs covered:** FR-1, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-48
-**Implementation notes:** Starts with the starter scaffold (AR1), CI, and the pgTAP harness with the coverage check (AR18). Includes the Admin part of FR-8; the Doctor part is in Epic 6. Includes feasibility stories for spikes S-3, S-4 and S-5 with no UI, Admin management of staff users, and the per-clinic release routine (AR19). Delivers: signed-in Today (empty), branding change, staff management, green isolation suite.
+**Implementation notes:** Starts with the starter scaffold (AR1), CI, and the pgTAP harness with the coverage check (AR18). Includes the Admin part of FR-8; the Doctor part is in Epic 6. Includes the isolation harness and capability matrix, automated accessibility checks, feasibility stories for spikes S-3, S-4 and S-5 with no UI, Admin management of staff users, and the per-clinic release routine (AR19). Delivers: signed-in Today (empty), branding change, staff management, green isolation suite.
 
 ### Epic 2: Patient records and onboarding
 The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter and move patients between phases or start a new episode for a returning patient.
 **FRs covered:** FR-9, FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-47
-**Implementation notes:** FR-9 here covers the patient list, search and phase filter only; the needs-attention block is in Epic 3. The Invite button is prepared but sending arrives in Epic 3. Delivers: add a patient end to end on phone and laptop.
+**Implementation notes:** FR-9 here covers the patient list, search and phase filter only; the needs-attention block is in Epic 3. Also covers the episode lifecycle (one open episode), correcting and removing patients. Sending the Invite arrives in Epic 3. Delivers: add a patient end to end on phone and laptop.
 
 ### Epic 3: Invite, patient sign-in and alerts
 A patient receives an invite, opens it on a phone, signs in by link or code with no password, and sees their journey Home. Notifications work through the in-app inbox and email, and staff see the needs-attention block.
@@ -272,123 +272,135 @@ So that every later story builds on one running, reproducible base.
 **Then** `app/(public)`, `app/(patient)`, `app/(clinic)`, `app/api/jobs`, `modules/`, `lib/`, `messages/en.json`, `supabase/migrations`, `supabase/tests`, `supabase/seed.sql` and `clinics.json` exist
 **And** where a pinned version does not build (Tailwind 4, TypeScript, Serwist), the fallback chosen is recorded in the README with the reason
 
-### Story 1.2: CI and the isolation test harness
+### Story 1.2: CI pipeline, policy checks and code rules
 
 As a builder,
-I want continuous checks that fail the build when a table has no access policy or no isolation test,
-So that no later story can ship an unprotected table by accident.
+I want continuous checks that fail the build when a table is unprotected or code breaks the project's rules,
+So that later stories cannot ship an unsafe table or leak health data by accident.
 
 **Acceptance Criteria:**
 
 **Given** a pull request
 **When** CI runs
-**Then** it runs lint, typecheck, unit tests, a migration check and the database tests (AR23)
-**And** a failed step fails the pull request
+**Then** it runs lint, typecheck, unit tests and a migration check, and a failed step fails the pull request (AR23)
 
 **Given** the migrations folder
 **When** the policy check runs
-**Then** it fails if any table in an exposed schema has row-level security disabled or has no policy
-**And** it fails if any policy uses an unconditional `true` (AR3)
+**Then** it fails if any table in an exposed schema has row-level security disabled or no policy, or if any policy uses an unconditional `true` (AR3)
+**And** a deliberately unprotected fixture table, kept only in a test fixture, makes the check fail with a message naming the table, while a clean fixture passes
 
-**Given** the database tests (`supabase test db` with pgTAP)
-**When** the coverage check runs
-**Then** it lists every table, view, exposed function and bucket in the database
-**And** it fails the build if any has no isolation test (AR18)
-
-**Given** a deliberately unprotected fixture table and a table with no test, kept only in a test fixture
-**When** the checks run against the fixture
-**Then** each check fails with a message naming the offending object
-**And** a clean fixture passes, proving the checks detect real problems
-
-**Given** the harness
-**When** a test author needs to act as a user
-**Then** helper functions exist to run a statement as an anonymous user, Patient A, Patient B, Staff of Clinic X, Staff of Clinic Y and a demoted user with an old token
-**And** the helpers act as a user by setting the token claims (`app_role`, `clinic_id`, patient) directly in the test session, so tests need no sign-in and can run before the sign-in story exists
-**And** the helpers are documented in `supabase/tests/README.md` (FR-6)
-
-**Given** the conventions for audit later
-**When** the coverage check runs
-**Then** it also fails if a clinic-owned table has no `created_at`, `updated_at` or, for clinical and logistics tables, `created_by` column, and if a server action writes data without going through a module action or a SQL function (AR22)
+**Given** the write-path rule
+**When** lint runs
+**Then** it fails if any file other than `modules/*/actions.ts`, `lib/privileged/*` and SQL migrations calls `.insert`, `.update`, `.upsert`, `.delete` or `.rpc` on the database client (AR7, AR22)
+**And** an import-boundary rule fails the build when a module imports another module's internals instead of its exported functions (AR8)
 
 **Given** the logging rule
 **When** lint runs
-**Then** it fails on code that logs a request body, a patient field or a health value, and unexpected errors carry a reference ID only (NFR5, AR20)
+**Then** `console.*` is banned in application code, and the only logger accepts an event name and a record of ids, so a request body, patient field or health value cannot be logged (NFR5, AR20)
 
-### Story 1.3: Design foundation and the demo shell
+**Given** the audit-ready conventions
+**When** the migration check runs
+**Then** it fails if a clinic-owned table lacks `created_at` or `updated_at`, or if a clinical or logistics table lacks `created_by` (AR22)
+
+### Story 1.3: Isolation test harness, coverage check and capability matrix
+
+As a builder,
+I want a test harness that acts as each kind of user and refuses to pass while any object is untested,
+So that isolation is proven for every table as it is added, not assumed.
+
+**Acceptance Criteria:**
+
+**Given** the database tests (`supabase test db` with pgTAP)
+**When** a test author needs to act as a user
+**Then** helper functions set the token claims (`app_role`, `clinic_id`, patient) directly in the test session for an anonymous user, Patient A, Patient B, Staff of Clinic X, Staff of Clinic Y and a demoted user, so tests need no sign-in (FR-6)
+**And** the helpers are documented in `supabase/tests/README.md`
+
+**Given** the coverage check
+**When** it runs in CI
+**Then** it lists every table, view, exposed function and storage bucket and fails the build if any has no isolation test, naming the object (AR18)
+**And** a fixture with one untested table proves the check fails
+
+**Given** `supabase/capability-matrix.json`
+**When** it is created
+**Then** it holds the PRD role table (each data area against Patient, Coordinator, Doctor, Admin with none, read or write) and a generator produces pgTAP expectations from it (AR10)
+**And** CI fails when a policy's behaviour in the tests disagrees with the matrix, so policies, tests and the PRD cannot drift
+
+### Story 1.4: Design foundation, demo shell and accessibility checks
 
 As a staff member or patient,
-I want every screen to carry the AyurSaathi look and the demo notice,
-So that the app feels consistent and invented data cannot be mistaken for real.
+I want every screen to carry the AyurSaathi look, the demo notice and an accessible baseline,
+So that the app is consistent, legible and cannot be mistaken for a real system.
 
 **Acceptance Criteria:**
 
 **Given** the app in a browser
 **When** any page loads
-**Then** the colour, type, spacing and radius tokens from `DESIGN.md` are applied as theme variables, in light and dark themes following the system setting (UX-DR1, UX-DR3)
-**And** the Atkinson Hyperlegible Next and Source Serif 4 fonts are self-hosted, with body text 18px for patient routes and 16px for clinic routes (UX-DR2)
+**Then** the colour, type, spacing and radius tokens from `DESIGN.md` are applied as theme variables, in light and dark themes, following the system setting unless the user chose otherwise (UX-DR1, UX-DR3)
+**And** Atkinson Hyperlegible Next and Source Serif 4 are self-hosted, with body text 18px on patient routes and 16px on clinic routes (UX-DR2)
 
 **Given** any page
 **When** it renders
 **Then** a "Demo data. Not real patients." ribbon shows at the top and cannot be dismissed (UX-DR11)
 
 **Given** the shared components
-**When** a primary button, secondary button, destructive button, card and input are rendered
-**Then** each matches the sizes and states in `DESIGN.md` (56px patient and 48px staff buttons, label above the input, error text with an icon and the words of the fix) (UX-DR4, UX-DR5)
-**And** each has a visible focus ring of 3px with a 2px offset in both themes (UX-DR23)
+**When** a primary, secondary and destructive button, a card and an input are rendered
+**Then** each matches `DESIGN.md` (56px patient and 48px staff buttons, label above the input, error text with an icon and the words of the fix) and has a 3px focus ring with a 2px offset in both themes (UX-DR4, UX-DR5, UX-DR23)
 
 **Given** text at 200% zoom and a 320px-wide screen
-**When** the demo shell page is viewed
+**When** the demo shell is viewed
 **Then** no horizontal scroll appears and no label is truncated (NFR8, UX-DR23)
 
 **Given** an unexpected error on any screen
 **When** it occurs
-**Then** a safe message appears: "Something went wrong. Your information is safe. Try again. Reference: ABC123." with the reference ID, and no data, stack trace or field value is shown or logged (NFR5, UX-DR21)
+**Then** the message reads "Something went wrong. Your information is safe. Try again. Reference: ABC123." with a reference ID, and no data, stack trace or field value is shown or logged (NFR5, UX-DR21)
 
-**Given** the microcopy rules
-**When** a developer adds text
-**Then** the string lives in `messages/en.json` and an automated check fails on a hard-coded UI string in a component (NFR3, UX-DR25)
+**Given** a developer adds UI text
+**When** lint runs
+**Then** the string must come from `messages/en.json`, and a hard-coded UI string in a component fails the check (NFR3, UX-DR25)
 
-### Story 1.4: Clinic record and settings store
+**Given** the Playwright suite
+**When** it runs in CI
+**Then** an automated accessibility check (axe-core) runs on every patient route that exists and fails CI on any serious or critical violation; each later story's routes are added to it (NFR8, UX-DR23)
+
+### Story 1.5: Clinic record and settings store
 
 As an Admin,
-I want my clinic's name, branding and clinical configuration stored as settings,
-So that nothing specific to one clinic lives in code and the clinic's rules can be edited later.
+I want my clinic's details, branding, terminology and clinical configuration stored as settings,
+So that nothing specific to one clinic lives in code and each part can be edited by the right role.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
 **Then** `clinics` and `clinic_settings` tables exist, owned by the `settings` module, each with `clinic_id`, row-level security and policies that check the clinic before the role (AR3, AR4, AR8)
-**And** `clinic_settings` holds versioned sections (branding, terminology, check-in questions, flag rules, consent text versions, templates), each validated by a Zod schema on read and write (AR9)
-
-**Given** the seed
-**When** it runs
-**Then** one clinic, "Ayurvedgram (demo)", exists with default terminology, five sample check-in questions, a sample flag-rule set labelled "Sample rules. Not clinical advice." and sample consent wording labelled "Sample wording. Not legal text." (FR-8, FR-16, FR-38 groundwork)
-**And** running the seed twice leaves the same data (FR-48)
-
-**Given** two clinic rows in the test database
-**When** Staff of Clinic X read `clinic_settings`
-**Then** they receive no rows of Clinic Y and cannot write them (FR-4)
+**And** `clinic_settings` holds versioned sections validated by Zod on read and write: contact (clinic phone in international format, display city label, default time zone), branding, terminology (including the six phase names), daily check-in questions, follow-up check-in questions, flag rules, consent text versions and templates (AR9, BR-11)
 
 **Given** the claim helper functions
 **When** this story is applied
-**Then** `app.user_role()`, `app.user_clinic()`, `app.user_patient_id()` and `app.is_staff()` exist as invoker functions that read only the token claims `app_role`, `clinic_id` and the patient link, and the policies in this story use them (AR5, AR17)
-**And** the sign-in hook that puts those claims in a real token and the active-profile check are added by Story 1.5
+**Then** `app.user_role()`, `app.user_clinic()`, `app.user_patient_id()` and `app.is_staff()` exist as invoker functions that read only the token claims, and this story's policies use them (AR5, AR17)
 
-**Given** the write policies
-**When** an Admin writes the branding or terminology sections
-**Then** the write succeeds
-**And** an Admin writing the check-in questions or flag rules is refused, a Doctor writing the flag rules succeeds, and a Coordinator writing any section is refused (FR-8)
+**Given** the seed
+**When** it runs
+**Then** one clinic, "Ayurvedgram (demo)", exists with an invented phone number, the city label "Pune", the zone Asia/Kolkata, default terminology, five sample daily questions, a sample follow-up set covering how the patient feels, medicines taken and diet issues, a sample flag-rule set labelled "Sample rules. Not clinical advice." and sample consent wording labelled "Sample wording. Not legal text." (FR-8, FR-16, FR-38 groundwork, FR-42 groundwork)
 
-**Given** a settings read from application code
-**When** any module needs clinic content
-**Then** it reads through `modules/settings` only, and a lint rule fails the build on a direct query of `clinic_settings` elsewhere (AR8)
-**And** pgTAP tests for every case above exist and the coverage check from Story 1.2 passes
+**Given** the section policies from the capability matrix
+**When** each role writes each section
+**Then** Admin writes contact, branding, terminology and consent text; Doctor writes both question sets and flag rules; a Coordinator writes nothing; every section has a pgTAP case per role (FR-8, AR10)
+**And** Staff read every section, a Patient reads contact, branding, terminology, both question sets and the current consent text, and a Patient never reads flag rules (FR-5, BR-06)
 
-### Story 1.5: Staff sign-in and roles
+**Given** two users save the same section at the same time
+**When** the second save arrives
+**Then** it carries the section version it was edited from and is refused with `conflict` if the version moved, and the second user keeps their input (AR7)
+
+**Given** two clinic rows in the test database
+**When** Staff of Clinic X read `clinic_settings`
+**Then** they receive no rows of Clinic Y and cannot write them, proven by pgTAP (FR-4)
+**And** application code reads settings only through `modules/settings` (AR8)
+
+### Story 1.6: Staff sign-in and roles
 
 As a coordinator, doctor or admin,
-I want to sign in with my email and password and land in the right area,
+I want to sign in with my email and password and land in the clinic area,
 So that I reach only what my role allows.
 
 **Acceptance Criteria:**
@@ -396,7 +408,7 @@ So that I reach only what my role allows.
 **Given** a staff account
 **When** the user enters the correct email and password
 **Then** they are signed in and land on the clinic area (FR-1)
-**And** public sign-up is disabled and the token hook gives no role to anyone not provisioned by an Admin (AR16)
+**And** public sign-up is disabled, the token hook gives no role to an account not provisioned by an Admin, and Supabase Auth's rate limits for password sign-in are configured and documented (AR16, AR21)
 
 **Given** a wrong password
 **When** the user submits
@@ -404,27 +416,19 @@ So that I reach only what my role allows.
 
 **Given** a signed-in user
 **When** the token is issued
-**Then** an auth hook adds `app_role` (one of patient, coordinator, doctor, admin) and `clinic_id` from `app_metadata` without overwriting `role`, and tokens expire in 10 minutes or less (AR5)
-**And** the helper functions from Story 1.4 remain the only way policies read claims, run as invoker and read claims only; this story extends `app.user_role()` to require an active profile (AR5, AR17)
+**Then** an auth hook adds `app_role` (patient, coordinator, doctor or admin) and `clinic_id` from `app_metadata` without overwriting `role`, and access tokens expire in 10 minutes or less (AR5)
+**And** this story extends `app.user_role()` to require an active profile, so a disabled user's old token is refused at once, proven by a pgTAP case (AR5)
 
-**Given** a user whose profile is disabled or whose role was changed
-**When** they use an old token
-**Then** `app.user_role()` treats them as having no role and access ends at once, proven by a pgTAP case (AR5)
+**Given** a signed-in account with no role
+**When** it reaches the app
+**Then** it sees "You do not have access to this page." with a sign-out button and nothing else (FR-3)
 
-**Given** a signed-in user
-**When** they choose Sign out under More
-**Then** the session ends, cached app-shell data is cleared and they return to the sign-in screen (AR20, UX-DR26)
+**Given** a seeded test account with the patient role
+**When** it requests any clinic route
+**Then** it receives "You do not have access to this page." with no detail about records (FR-3)
+**And** the `profiles` table has policies and isolation tests, and the session ends when the user signs out (AR18)
 
-**Given** a Patient role
-**When** they request any clinic route
-**Then** they receive "You do not have access to this page." with a link to their home and no detail about records (FR-3)
-
-**Given** a Coordinator
-**When** they attempt to write a Note or a Medicine through the database
-**Then** the write is refused by policy, per the capability matrix in `supabase/capability-matrix.json` (FR-3, AR10)
-**And** the `profiles` table has policies and isolation tests (AR18)
-
-### Story 1.6: Clinic area shell and an empty Today
+### Story 1.7: Clinic area shell and an empty Today
 
 As a coordinator or doctor,
 I want a navigation shell that works on my phone and my laptop and a Today screen,
@@ -434,58 +438,53 @@ So that I always know where I am and what to open next.
 
 **Given** a signed-in staff user on a phone under 600px
 **When** the clinic area loads
-**Then** a bottom bar shows Today, Patients, Review (Doctor) or Plans (Coordinator), and More, each with an icon and a label, the current item marked with a bar and bold label (UX-DR9)
+**Then** a bottom bar shows Today and More, each with an icon and a label, the current item marked with a bar and a bold label (UX-DR9)
+**And** each later story that adds a screen registers its own navigation item for the roles allowed (Patients in 2.1, Review in 6.3 for Doctors, Plans in 5.3 for Coordinators, Settings for Admins), so no role ever sees a dead link (UX-DR28)
 
 **Given** a laptop at 1024px or wider
 **When** the clinic area loads
-**Then** a 240px sidebar shows the same items plus Settings and the clinic name, with a list-and-detail layout available to later screens (UX-DR10, UX-DR24)
-**And** More shows only the items that exist at this point, and each later story that adds a screen (Clinic settings in Story 1.7, People in Story 1.12, Updates in Story 3.1) adds its item for the roles allowed to use it, so no role sees a dead link or an item it cannot use (UX-DR28)
+**Then** a 240px sidebar shows the same items and the clinic name, ready for list-and-detail screens (UX-DR10, UX-DR24)
+
+**Given** More
+**When** it opens
+**Then** it offers Settings, with the theme choice (System, Light or Dark, remembered on that device) and Sign out, which ends the session (UX-DR1)
 
 **Given** the Today screen
 **When** there is nothing to show
-**Then** it says "Nothing needs attention." with the clinic name from settings (UX-DR21)
-**And** it shows a loading skeleton with the word "Loading" while data loads (UX-DR21)
+**Then** it says "Nothing needs attention." with the clinic name from settings, and shows a skeleton with the word "Loading" while it loads (UX-DR21)
+**And** on a throttled mobile connection typical of the clinic's phones it becomes usable within about 3 seconds (BRD NFR-03)
 
-**Given** More, Settings
-**When** the user chooses a theme
-**Then** System, Light or Dark can be selected and is remembered on that device (UX-DR1)
+**Given** the same staff user on a phone and a laptop
+**When** they use the available actions
+**Then** the same data and actions are present on both, every item is reachable by Tab, and the focus ring shows (NFR2, UX-DR23, UX-DR26)
 
-**Given** a throttled mobile connection typical of the clinic's phones
-**When** Today loads
-**Then** it becomes usable within about 3 seconds (BRD NFR-03)
-
-**Given** the same staff user on phone and laptop
-**When** they perform the available actions
-**Then** the same data and the same actions are present on both (NFR2)
-**And** keyboard users can reach every item with Tab and see the focus ring (UX-DR23, UX-DR26)
-
-### Story 1.7: Admin sets clinic branding and terminology
+### Story 1.8: Admin sets clinic details, branding and terminology
 
 As an Admin,
-I want to set my clinic's name, branding and terminology labels,
-So that the app speaks my clinic's language without anyone changing code.
+I want to set my clinic's name, contact details, branding and terminology, including the phase names,
+So that the app speaks my clinic's language and shows the right phone number without anyone changing code.
 
 **Acceptance Criteria:**
 
 **Given** a signed-in Admin
 **When** they open More, Settings, Clinic
-**Then** they can edit the clinic name, brand colours within accessible limits and terminology labels, each validated by its schema (FR-8)
+**Then** they can edit the clinic name, phone, display city label, default time zone, brand colours and terminology labels, including the six phase names, each validated (name and labels 1 to 40 characters, phone in international format) (FR-8, BR-11)
 
-**Given** a changed terminology label
+**Given** a changed label or phase name
 **When** the Admin saves
-**Then** the new label shows on the screens that use it on the next load, with no code change (FR-8, BR-11)
-**And** no screen text names Ayurvedgram except through Clinic Settings (FR-8)
+**Then** the new wording shows wherever it is used on the next load, including the phase chips and journey bar, with no code change, proven by a test that renames a phase (FR-8, BR-11)
+**And** no screen text names Ayurvedgram or Pune except through Clinic Settings (FR-8)
 
-**Given** a brand colour that fails the contrast check for text on its background
-**When** the Admin tries to save
-**Then** the save is refused with a message naming the colour and the required contrast (NFR8)
+**Given** a brand colour
+**When** the Admin saves
+**Then** it is refused if text on it fails the contrast check against either the light or the dark theme surface, with a message naming the colour and the required contrast (NFR8)
 
 **Given** a Coordinator or Doctor
 **When** they request the Clinic settings screen or call the save
-**Then** they are refused, with the screen hidden from their navigation and the write refused by policy (FR-8, FR-3)
-**And** a failed save keeps the Admin's input and says what to do next (UX-DR21)
+**Then** the screen is not in their navigation and the write is refused by policy (FR-8, FR-3)
+**And** a failed or conflicting save keeps the Admin's input and says what to do next (UX-DR21)
 
-### Story 1.8: Installable app and offline shell
+### Story 1.9: Installable app and offline shell
 
 As a patient or staff member,
 I want to add the app to my phone's home screen and still see a clear message when I am offline,
@@ -511,7 +510,7 @@ So that it opens like an app and never shows stale health information.
 **Then** an "Add to home screen" help page explains how, with steps for iPhone and Android (UX-DR27)
 **And** the service worker never stores a response from an authenticated route, proven by a test (AR20)
 
-### Story 1.9: Demo seed and isolation fixtures
+### Story 1.10: Demo seed and isolation fixtures
 
 As a builder,
 I want a repeatable demo data set of invented people and two clinics,
@@ -526,9 +525,9 @@ So that I can demonstrate every journey and the tests have realistic fixtures.
 
 **Given** the seed
 **When** it runs a second time
-**Then** the data is unchanged and no duplicates appear (FR-48)
+**Then** it inserts only rows that are missing and never duplicates, and a separate `seed:reset-demo` command restores every demo row to its canonical state before a demo (FR-48)
 
-**Given** the isolation harness from Story 1.2
+**Given** the isolation harness from Story 1.3
 **When** the fixtures are loaded
 **Then** Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y exist for the tests, with patients' rows added by later epics as their tables arrive (FR-5, FR-6)
 
@@ -537,7 +536,7 @@ So that I can demonstrate every journey and the tests have realistic fixtures.
 **Then** only the one demo clinic is created and never the second clinic (AR4)
 **And** the seed command refuses to run if the target is not marked as a demo environment (NFR1)
 
-### Story 1.10: Feasibility check: region and sign-in link delivery
+### Story 1.11: Feasibility check: region and sign-in link delivery
 
 As a product owner,
 I want to know that the planned hosting region and the emailed sign-in link work before building on them,
@@ -561,7 +560,7 @@ So that a wrong assumption is found now, not after several epics.
 
 *Prerequisites that only Ravi can supply: Supabase organisation access and sandbox SMTP credentials.*
 
-### Story 1.11: Feasibility check: phone uploads, HEIC and signed links
+### Story 1.12: Feasibility check: phone uploads, HEIC and signed links
 
 As a product owner,
 I want to know that photos from an iPhone and an Android phone can be uploaded and opened safely,
@@ -583,10 +582,10 @@ So that the Documents epic does not hit a surprise late.
 **Then** a findings note in `docs/spikes/` records the working approach, the oldest phone tested and any change to Epic 7
 **And** no user-facing screen is added by this story
 
-### Story 1.12: Admin manages staff users
+### Story 1.13: Admin manages staff users
 
 As an Admin,
-I want to add staff, set their role and remove their access,
+I want to add staff, set their role, disable and re-enable them, and help them back in when they forget their password,
 So that only the right people can use the clinic area.
 
 **Acceptance Criteria:**
@@ -598,22 +597,27 @@ So that only the right people can use the clinic area.
 **Given** the Add staff form
 **When** the Admin enters a name, an email and a role (coordinator, doctor or admin)
 **Then** the account is created through `lib/privileged` with the clinic taken from the Admin's verified token, never from input, and the role and clinic stored in `app_metadata` (AR6, AR5)
-**And** the new staff member receives an email to set their own password, which locally appears in Mailpit (FR-1)
+**And** the new staff member receives an email to set their own password (locally in Mailpit), and the Admin can resend it
+**And** an email already used by any account, staff or patient, is refused with `conflict` and a plain message (FR-1)
 
-**Given** a staff member's role is changed or the account is disabled
+**Given** a staff member's role is changed, or the account is disabled or re-enabled
 **When** the Admin confirms, with a confirmation that names the person
-**Then** access ends or changes at once for policy checks and within the token lifetime for any token already issued, and a pgTAP case proves a demoted user's old token no longer works (AR5, AR18)
-**And** the last Admin cannot be demoted or disabled, and an Admin cannot change their own role, each with a message that says why (FR-3)
+**Then** policy checks follow the change at once, an old token no longer works (pgTAP), and the person's app refreshes its token and navigation on the next request instead of showing actions that would fail (AR5, AR18)
+**And** the last Admin cannot be demoted or disabled and an Admin cannot change their own role, each with a message that says why (FR-3)
+**And** records written by a disabled user keep their author, shown as "Former staff: <name>"
+
+**Given** a staff member who forgot their password
+**When** they choose "Forgot password" on the staff sign-in screen
+**Then** a reset email is sent with the same response whether or not the email exists, a cooldown on repeats, and no reset is sent to patient accounts (FR-1, AR16)
 
 **Given** a Coordinator or Doctor
 **When** they request People or call its actions
-**Then** the screen is hidden from their navigation and the writes are refused by policy (FR-3, AR10)
-**And** staff of Clinic X cannot list or change staff of Clinic Y, proven by pgTAP on `profiles` (FR-4, AR18)
+**Then** the screen is not in their navigation and the writes are refused by policy, and Staff of Clinic X cannot list or change Staff of Clinic Y, proven by pgTAP on `profiles` (FR-3, FR-4, AR10)
 
-### Story 1.13: Release routine and clinic manifest
+### Story 1.14: Release routine and clinic manifest
 
 As a builder,
-I want one repeatable routine that updates every clinic's database before its app,
+I want one repeatable routine that updates every clinic's database before its app, without breaking a clinic part-way,
 So that clinic projects never drift apart.
 
 **Acceptance Criteria:**
@@ -624,21 +628,24 @@ So that clinic projects never drift apart.
 
 **Given** a release
 **When** the release command runs
-**Then** it checks CI passed, applies pending migrations to every project in the manifest, and only then deploys that clinic's app, stopping at the first failure and naming the clinic that failed (AR19)
+**Then** for each clinic in turn it checks CI passed, applies pending migrations, then deploys that clinic's app, and on a failure it stops, names the clinic that failed and lists which clinics are already released (AR19)
 **And** a dry-run option lists what would change for each clinic without changing anything
+
+**Given** migrations
+**When** they are written
+**Then** each one must keep the previous app version working (expand first, remove later), so a clinic whose database was migrated but whose app was not deployed still works, checked by running the previous app's tests against the migrated schema in CI (AR19)
 
 **Given** the migrations folder
 **When** CI runs
 **Then** a check fails any change to a migration file that has already been released, because changes are forward-fix only (AR19)
 
-**Given** a manifest with one clinic and one with two clinics
+**Given** a manifest with one clinic and one with two
 **When** the dry run is executed against each
-**Then** both work, so adding a second clinic needs no change to the routine (AR2, AR19)
-**And** the steps are documented in the README for someone other than Ravi to follow (AR19)
+**Then** both work, so adding a second clinic needs no change to the routine, and the steps are documented in the README for someone other than Ravi to follow (AR2, AR19)
 
 ## Epic 2: Patient records and onboarding
 
-The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter and move patients between phases or start a new episode for a returning patient. Covers FR-9 (list, search and filter), FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-47. The Invite itself is sent in Epic 3; the needs-attention block is built in Epic 3. The `patients` module is the only writer of `patients`, `episodes`, `phase_events` and `consents`; the `onboarding` module owns only `onboarding_drafts` and calls the `patients` module's exported functions (AR8).
+The coordinator adds a patient in three steps (details, consent, review and invite), saves drafts, is warned of duplicates, and staff can list, search, filter, correct and move patients between phases or start a new episode for a returning patient. Covers FR-9 (list, search and filter), FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-47. The Invite is sent in Epic 3; the needs-attention block is built in Epic 3; documents and the patient photo are added after creation in Epic 7. The `patients` module is the only writer of `patients`, `episodes`, `phase_events` and `consents`; the `onboarding` module owns only `onboarding_drafts` and calls the `patients` module's exported functions (AR8). A patient has at most one open episode; every patient-facing screen reads that open episode only.
 
 ### Story 2.1: Patient list with phase, search and filter
 
@@ -650,27 +657,28 @@ So that I can open the right record in a few taps.
 
 **Given** the migrations
 **When** this story is applied
-**Then** `patients` and `episodes` tables exist, owned by the `patients` module, each with `clinic_id`, row-level security and policies for Staff, with a Patient able to read only their own row through `app.user_patient_id()` (AR3, AR4, AR8)
-**And** pgTAP tests prove Patient A cannot read or write Patient B's rows, Staff of Clinic X cannot read Clinic Y's, and a Patient cannot write a patient row, and the coverage check passes (FR-4, FR-5, AR18)
+**Then** `patients` and `episodes` tables exist, owned by the `patients` module, each with `clinic_id`, row-level security, Staff policies, and a Patient able to read only their own rows through `app.user_patient_id()` (AR3, AR4, AR8)
+**And** `episodes` has a `closed_at` time and a unique rule allowing at most one open episode per patient, and a helper `app.current_episode()` returns the caller's open episode for patient-facing policies and screens (FR-11)
+**And** pgTAP tests prove Patient A cannot read or write Patient B's rows, Staff of Clinic X cannot read Clinic Y's, and a Patient cannot write a patient or episode row, and the coverage check passes (FR-4, FR-5, AR18)
 
 **Given** the demo seed
 **When** it runs
-**Then** invented patients across all six phases exist for the demo clinic, with no real names, and a second run changes nothing (FR-48, NFR1)
+**Then** invented patients across all six phases exist for the demo clinic, with no real names (FR-48, NFR1)
 
 **Given** a signed-in Staff user
-**When** they open Patients
-**Then** a list shows each patient with name, a phase chip (number and name), one status badge (Nothing due for now) and last activity, and the whole row is the target (FR-9, UX-DR6, UX-DR13)
-**And** with no patients the screen says "No patients yet. Add the first patient." with an Add patient button (UX-DR21)
+**When** they open Patients, which this story adds to the navigation
+**Then** a list shows each patient with name, a phase chip (number and the clinic's phase name) and last activity, and the whole row is the target; status badges are added by later stories (FR-9, UX-DR6, UX-DR13)
+**And** with no patients the screen says "No patients yet. Add the first patient." (UX-DR21)
 
 **Given** the list
 **When** the user types in search or picks a phase filter
-**Then** results narrow by name, email or phone, and by phase, returning only patients of the user's clinic (FR-9)
-**And** on a laptop pressing "/" focuses the search field (UX-DR26)
+**Then** results narrow by name, email or phone (phone matched on digits only, `%` and `_` treated as plain characters), and by phase, returning only patients of the user's clinic (FR-9)
+**And** on a laptop pressing "/" focuses search (UX-DR26)
 
 **Given** a patient row
 **When** it is opened
-**Then** a patient record page shows an Overview with name, contact details, nationality, the current phase chip and the record tabs (Overview, Before arrival, Arrival, Care, After, Documents), the later tabs showing "Nothing here yet" (FR-9)
-**And** on a laptop at 1024px or wider the list sits at 360px beside the record, and on a phone the record opens full screen (UX-DR10, UX-DR24)
+**Then** the record shows an Overview with name, contact details, nationality and current phase, and the tabs Overview, Before arrival, Arrival, Care, After and Documents, the later tabs showing "Nothing here yet" (FR-9)
+**And** on a laptop the list sits at 360px beside the record, and on a phone the record opens full screen (UX-DR10, UX-DR24)
 
 ### Story 2.2: Add a patient
 
@@ -680,114 +688,115 @@ So that their record exists and I can start their journey.
 
 **Acceptance Criteria:**
 
+**Given** the migrations
+**When** this story is applied
+**Then** a `phase_events` table exists, owned by the `patients` module, with row-level security and pgTAP tests, and the SQL function `start_episode(patient, phase)` creates an episode and its first phase event in one transaction (AR14)
+**And** the migration adds a first phase event for every episode that already exists, so no episode lacks history (FR-10)
+
 **Given** the Patients list
 **When** the coordinator taps Add patient
-**Then** a dedicated flow opens, separate from the list, with a "Step 1 of N" progress word, and the step count is driven by configuration so later stories can add steps (FR-13, UX-DR14)
+**Then** a dedicated flow opens, separate from the list, with "Step 1 of 2" (Details, then Review), its step count driven by configuration so Story 2.5 can add the consent step (FR-13, UX-DR14)
 
-**Given** step 1
-**When** the coordinator fills name, email, phone and nationality as required fields
-**Then** the patient can be created with an optional photo, date of birth, passport number, emergency contact name and phone (FR-13)
-**And** the starting phase can be chosen between Enquiry (default), Assessment and Planning
+**Given** the details step
+**When** the coordinator fills name, email, phone and nationality
+**Then** the patient can also be given a date of birth, passport number and emergency contact name and phone, and a starting phase of Enquiry (default), Assessment or Planning (FR-13)
+**And** the photo and documents are added after creation from the "Add documents now" card (Epic 7), so the form takes no file
 
 **Given** a missing or invalid field
-**When** the form is submitted
-**Then** each message is specific and in plain words, for example "Enter the phone number with country code, for example +43 1 234 5678." and "Date of birth cannot be in the future." (FR-13)
-**And** an emergency contact name without a phone asks for the phone, the first invalid field takes focus, and the input is kept (UX-DR21)
+**When** the coordinator continues
+**Then** each message is specific, for example "Enter the phone number with country code, for example +43 1 234 5678." and "Date of birth cannot be in the future.", an emergency contact name without a phone asks for the phone, the first invalid field takes focus and the input is kept (FR-13, UX-DR21)
 
-**Given** a valid form on the review screen
+**Given** the review step
 **When** the coordinator confirms
-**Then** a patient row and a first episode are created through the `patients` module's exported function in one action that returns the typed Result and uses an idempotency key, so a double tap creates one patient (AR7, AR14)
-**And** the new patient appears in the list and opens on Overview, with nobody emailed and no sign-in account created yet (FR-13)
-
-**Given** a Doctor or Admin
-**When** they use Add patient
-**Then** it works, and a Patient role cannot reach the flow (FR-3)
-**And** the same flow works on phone and laptop with large touch targets and keyboard access (NFR2, UX-DR23)
+**Then** the patient is created through the `patients` module and `start_episode`, with an idempotency key so a double tap creates one patient, and the record opens on Overview with nobody emailed and no sign-in account created (AR7, AR14, FR-13)
+**And** Doctors and Admins can use the flow, a Patient cannot reach it, and it works on phone and laptop (FR-3, NFR2)
 
 ### Story 2.3: Save an onboarding draft and resume it
 
 As a coordinator,
-I want to save an unfinished onboarding and come back to it,
+I want an unfinished onboarding saved and resumable,
 So that an interruption does not lose what I typed.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `onboarding_drafts` table exists, owned by the `onboarding` module, with `clinic_id`, row-level security and a policy that lets Staff of the clinic read and write their clinic's drafts and nobody else, with pgTAP tests (AR8, AR18)
+**Then** an `onboarding_drafts` table exists, owned by the `onboarding` module, with `clinic_id`, a version number and row-level security letting only Staff of the clinic read and write it, with pgTAP tests (AR8, AR18)
 
 **Given** an onboarding in progress
-**When** the coordinator taps Save draft, which is always visible, or tries to leave
-**Then** the draft is saved, and leaving prompts "Save as draft?" (FR-14, UX-DR14)
-**And** a draft creates no patient, no sign-in account and no Invite (FR-14)
+**When** the coordinator moves between steps, taps Save draft (always visible) or tries to leave
+**Then** the draft is saved automatically on each step change, explicitly on Save draft, and leaving prompts "Save as draft?" (FR-14, UX-DR14)
+**And** a draft creates no patient, no account and no Invite, and holds no file (FR-14, AR15)
 
 **Given** saved drafts
 **When** the coordinator opens Patients
-**Then** a "Drafts (N)" entry lists them with name and the date saved, and tapping one resumes at the step where it stopped with the input restored (FR-14)
+**Then** "Drafts (N)" lists them with the name, or "Unnamed draft", and the date saved, and opening one resumes at its step with input restored (FR-14)
+
+**Given** two staff edit the same draft
+**When** the second saves from an older version
+**Then** the save is refused with `conflict` and a message, and the second user keeps their input (AR7)
 
 **Given** a draft
-**When** the coordinator discards it
-**Then** a confirmation names the draft, and after confirming it is deleted (UX-DR26)
+**When** it is discarded, completed or untouched for 30 days
+**Then** discarding asks for confirmation naming the draft; completing removes the draft in the same action, failing with `not_found` if it was discarded meanwhile; and drafts untouched for 30 days are deleted by the daily job, because they hold personal data `[ASSUMPTION: 30 days]` (FR-14, UX-DR26)
 
-**Given** a draft that is later completed
-**When** the patient is created
-**Then** the draft is removed in the same action and holds no files, because documents attach only to a saved patient (AR15)
-
-### Story 2.4: Duplicate patient warning
+### Story 2.4: Duplicate patient check
 
 As a coordinator,
-I want to be warned when someone with the same email, phone or passport number already exists,
+I want to be stopped from reusing an email and warned about a matching phone or passport,
 So that I do not create a second record for the same person.
 
 **Acceptance Criteria:**
 
-**Given** the details step
-**When** the coordinator leaves the email, phone or passport field
-**Then** the system checks the clinic's existing patients for a match on that value (FR-15)
+**Given** the patients table
+**When** this story is applied
+**Then** email is unique per clinic regardless of capitalisation, phone numbers are stored in international format and passport numbers in capitals without spaces, so matches compare like with like (FR-15)
 
-**Given** a match
+**Given** the details step
+**When** the coordinator leaves the email, phone or passport field, and again when the patient is created
+**Then** the system checks the clinic's patients for a match (FR-15)
+
+**Given** an email match
+**When** it is found
+**Then** creation is blocked with "A patient with this email already exists. Open their record instead." and an Open that record link, because email is the patient's sign-in identity (FR-15)
+
+**Given** a phone or passport match
 **When** it is found
 **Then** a warning shows the existing patient's name and phase with "Open that record" and "Continue anyway" (FR-15)
-**And** choosing Open that record leaves the draft saved and opens the existing record
 
-**Given** the same email in a different clinic's database
+**Given** the same email in another clinic's database
 **When** the check runs
-**Then** no match is shown, because the check reads only the user's own clinic (FR-4)
-**And** a pgTAP test proves a Staff user of Clinic X cannot see Clinic Y patients through the check
-
-**Given** an email typed in different capitalisation
-**When** the check runs
-**Then** it still matches, and an email already taken shows "A patient with this email already exists. Open their record instead." (FR-15)
+**Then** no match is shown, because the check reads only the user's own clinic, proven by pgTAP (FR-4)
 
 ### Story 2.5: Record consent during onboarding
 
 As a coordinator,
-I want to record that the patient has agreed to the clinic keeping their information,
+I want to record that the patient has agreed to the clinic keeping their information, and record a withdrawal if they change their mind,
 So that consent is captured at the start with the wording the clinic uses.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `consents` table exists, owned by the `patients` module, with `clinic_id`, the consent text version, the time, who recorded it, how it was given, and a nullable withdrawn time, with row-level security and pgTAP tests, where a Patient can read only their own consents (FR-16, AR3, AR18)
+**Then** a `consents` table exists, owned by the `patients` module, with `clinic_id`, the consent text version, the time, who recorded it, how it was given, and a withdrawn time, with row-level security and pgTAP tests, where a Patient reads only their own consents (FR-16, AR3, AR18)
 
 **Given** the onboarding flow
 **When** it runs
-**Then** Consent is step 2 and the step count becomes three (Details, Consent, Review and invite) (FR-16, UX-DR14)
+**Then** Consent becomes step 2 and the steps are Details, Consent, Review and invite ("Step 2 of 3") (FR-16, UX-DR14)
 
 **Given** step 2
 **When** it is shown
-**Then** it displays the clinic's current consent text from settings with a visible "Sample wording. Not legal text." badge, and a tick box with the words of what is being agreed (FR-16, AR9)
-**And** the patient cannot be created until the box is ticked, with a message that says why
+**Then** it displays the clinic's current consent text with a "Sample wording. Not legal text." badge and a tick box stating what is agreed, and the patient cannot be created until it is ticked (FR-16, AR9)
+**And** if the clinic has no consent text, onboarding stops with "Consent wording is not set. Ask your Admin." (FR-16)
 
 **Given** a patient is created
 **When** the consent is saved
-**Then** it stores the text version, the timestamp, who ticked it and how it was given (in person or by phone)
-**And** the consent text of that version stays readable later even if the clinic updates the wording
+**Then** it stores the version that was displayed, refusing with `conflict` if the wording changed in the meantime, plus the time, who ticked it and how it was given; that version's text stays readable later (FR-16)
+**And** a draft resumed at step 2 does not carry the tick over (FR-16)
 
-**Given** a draft saved at step 2
-**When** it is resumed
-**Then** the consent tick is not carried over and must be given again at the time of creation (FR-16)
+**Given** a patient withdraws consent
+**When** Staff record the withdrawal with its date and how it was given
+**Then** the withdrawn time is set and the record shows a "Consent withdrawn" banner to Staff; what processing must then stop is decided in the legal review before real data (FR-16, BRD NFR-06)
 
 ### Story 2.6: Move an episode between phases
 
@@ -797,84 +806,128 @@ So that the record always shows where the patient is in the journey.
 
 **Acceptance Criteria:**
 
-**Given** the migrations
-**When** this story is applied
-**Then** a `phase_events` table exists, owned by the `patients` module, with row-level security, and `episodes.phase` is writable only through the SQL function `move_phase`, which writes the history row in the same transaction (FR-10, AR14)
-**And** pgTAP tests prove a direct update of `episodes.phase` is refused for every role (AR18)
+**Given** the SQL function `move_phase(episode, expected_current_phase, new_phase, note)`
+**When** it is applied
+**Then** `episodes.phase` is writable only through it and it writes the history row in the same transaction; a direct update of `episodes.phase` is refused for every role, proven by pgTAP (FR-10, AR14)
 
 **Given** the patient's Overview
 **When** Staff choose a new phase
-**Then** a confirmation names the patient and the new phase, an optional note can be added, and after confirming the phase chip updates (FR-10, UX-DR26)
-**And** moving to any phase, forward or back, is allowed (assumption recorded in the spine)
+**Then** a confirmation names the patient and the new phase, an optional note can be added, and after confirming the phase chip updates; any phase forward or back is allowed (FR-10, UX-DR26)
+
+**Given** another user moved the same episode since the screen loaded
+**When** Staff confirm
+**Then** the move is refused with `conflict` and the message "This patient was just moved to Care by <name>.", and nothing changes (FR-10, AR7)
+
+**Given** a move to the phase the episode is already in, or a move of a closed episode
+**When** it is submitted
+**Then** it is refused with a plain message (FR-10)
 
 **Given** a move
 **When** it completes
-**Then** a history entry records who moved it, when, from which phase to which, and the note, and the Overview lists the history in date order (FR-10)
-
-**Given** two staff members move the same episode nearly together
-**When** both submit
-**Then** both are recorded in order and the final phase is that of the later move, with no lost history (FR-10)
-
-**Given** a Patient role
-**When** they attempt to call `move_phase`
-**Then** it is refused (FR-3, AR17)
+**Then** history shows who, when, from which phase to which and the note, in date order (FR-10)
+**And** what each phase allows is stated where it matters: daily check-ins run only while in Care (Epic 6) and follow-up schedules only while in Continuity (Epic 9) (FR-10)
 
 ### Story 2.7: Start a new episode for a returning patient
 
 As a coordinator,
 I want to start a new visit for a patient who has been treated before,
-So that their record and details carry over and nothing is re-entered.
+So that their record carries over and nothing is re-entered.
 
 **Acceptance Criteria:**
 
 **Given** a patient with an earlier episode
 **When** Staff choose Start new episode on Overview
-**Then** the choices for the starting phase are Assessment or Planning only, with no Enquiry option (FR-11, BR-04)
+**Then** the starting phase is Assessment or Planning only, with no Enquiry option (FR-11, BR-04)
 
 **Given** a new episode is started
-**When** it is created
-**Then** the patient's name, contact details, nationality and consents are unchanged and not asked for again (FR-11)
-**And** the earlier episode stays visible, marked closed with its closing date, and the new episode shows as current (FR-11)
+**When** it is created through `start_episode`
+**Then** the previous open episode is closed with today's date in the same transaction, so there is never more than one open episode, and an idempotency key makes a double tap create one episode (FR-11, AR7, AR14)
+**And** the patient's details and earlier documents are unchanged and not asked for again (FR-11)
+
+**Given** the clinic's consent wording changed since the patient last agreed
+**When** the new episode is started
+**Then** Staff are asked to record consent to the current wording before continuing (FR-16)
 
 **Given** a patient with several episodes
 **When** Overview is shown
-**Then** episodes are listed newest first, each with its own phase chip and phase history, and each moves through phases independently (FR-10, FR-11)
-
-**Given** a list of patients
-**When** a returning patient is searched for
-**Then** the single patient is found once, not once per episode (FR-9)
-**And** the new episode starts through `move_phase` so its first history entry exists, with pgTAP coverage (AR14)
+**Then** episodes are listed newest first, each with its own phase and history, the closed ones marked closed with their closing date, and search finds the patient once (FR-9, FR-11)
 
 ### Story 2.8: Patient time zone and time display
 
 As a coordinator or patient,
-I want times shown in the patient's own time zone with the clinic time beside it,
+I want times shown clearly in the right time zone with the clinic's time beside it,
 So that flights and check-ins are never misread across countries.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** `patients.timezone` stores an IANA zone and `clinics.default_timezone` stores the clinic's zone, set to Asia/Kolkata in the demo seed (FR-47, AR11)
+**Then** `patients.timezone` stores an IANA zone, and the clinic's default zone and display city label come from Clinic Settings (FR-47, AR11, BR-11)
 
 **Given** a new patient
-**When** the coordinator does not set a zone
-**Then** the patient defaults to the clinic's zone, and the details step offers a searchable zone field with the country's likely zone pre-selected from nationality (FR-47)
+**When** the coordinator does not choose a zone
+**Then** it defaults to the clinic's zone; the zone field pre-selects a zone only for a nationality with a single zone and asks for an explicit choice for countries with several (FR-47)
 
 **Given** a stored instant
 **When** a screen shows it to a viewer
-**Then** it displays as "Thu 12 Nov, 14:35 CET (Pune 19:05)" when the viewer's zone differs from the clinic's, and without the brackets when it does not (FR-47, UX-DR20)
-**And** all instants remain `timestamptz` UTC in storage (AR11, NFR4)
+**Then** it reads "Thu 12 Nov, 14:35 CET (Pune 19:05)" with the city label from settings when the viewer's zone differs from the clinic's, and without the brackets when it does not (FR-47, UX-DR20)
+**And** instants are stored as `timestamptz` UTC (AR11, NFR4)
 
-**Given** unit tests
-**When** they run for patients in Europe, India, the US West Coast and across a daylight-saving change
-**Then** every case converts and displays correctly, and a check-in's `local_date` helper returns the date in the patient's zone (FR-47, AR11)
+**Given** a local time that does not exist or occurs twice because of a daylight-saving change
+**When** it is entered
+**Then** a missing time moves forward to the first valid time and a repeated time takes the first occurrence, and the screen shows the resolved time before saving (FR-47)
+**And** unit tests cover Europe, India, the US West Coast and both daylight-saving changes, and a `local_date` helper returns the date in a given zone (AR11)
+
+### Story 2.9: Correct a patient's details
+
+As a coordinator,
+I want to correct a patient's details after the record is created,
+So that a typo in a phone number, email or time zone does not stay on the record.
+
+**Acceptance Criteria:**
+
+**Given** a patient's Overview
+**When** Staff choose Edit details
+**Then** they can change name, email, phone, nationality, date of birth, passport number, emergency contact and time zone with the same validation as Story 2.2 and the duplicate checks of Story 2.4 (FR-13, FR-15, FR-47)
+
+**Given** two staff edit the same patient
+**When** the second saves from an older version
+**Then** the save is refused with `conflict` and the second user keeps their input (AR7)
+
+**Given** a change of time zone
+**When** it is saved
+**Then** times not yet passed (future check-ins and reminders) are computed in the new zone from then on, and past records are unchanged (FR-47)
+
+**Given** a change of email before the patient has a sign-in account
+**When** it is saved
+**Then** the new email is used for the next invite; a change after the account exists is handled in Epic 3 (FR-13)
+**And** a Patient cannot edit their own record here, proven by pgTAP (FR-5)
+
+### Story 2.10: Remove a patient created by mistake
+
+As a coordinator or admin,
+I want to remove a patient record that was created in error,
+So that duplicates and test entries do not clutter the list.
+
+**Acceptance Criteria:**
+
+**Given** a patient with no invite sent and no clinical, logistics or payment records
+**When** a Coordinator or Admin chooses Remove patient and confirms by typing the patient's name
+**Then** the record is hidden from the list, search and every policy, with `deleted_at` set and the row kept (FR-9, UX-DR26)
+
+**Given** a patient with an invite or any clinical, logistics or payment record
+**When** a Coordinator tries to remove them
+**Then** removal is refused with a message saying an Admin must do it, and an Admin can remove it after a second confirmation (FR-3)
+
+**Given** a removed patient
+**When** any role queries any table
+**Then** none of their rows are returned to patients, and Staff see them only through an Admin "Removed patients" list, proven by pgTAP (FR-5, AR10)
 
 ## Epic 3: Invite, patient sign-in and alerts
 
-A patient receives an invite, opens it on a phone, signs in by link or code with no password, and sees their journey Home. Notifications work through the in-app inbox and email, and staff see the needs-attention block. Covers FR-2, FR-9 (needs-attention block), FR-12, FR-19, FR-45, FR-46. The `notifications` module owns `notifications` and `alerts`; the `access` module owns `invites`. All notification writes go through `app.emit_event`, and the service-role key is read only in `lib/privileged` (AR6, AR12).
+A patient receives an invite, opens it on a phone, signs in by link or code with no password, and sees their journey Home. Notifications work through the in-app inbox and email, and staff see the needs-attention block. Covers FR-2, FR-9 (needs-attention block), FR-12, FR-19, FR-45, FR-46. The `notifications` module owns `notifications` and `alerts`; the `access` module owns `invites`. Events are raised only by database triggers and named SQL functions, never called by a client (AR12). The service-role key is read only in `lib/privileged` (AR6). No email, to a patient or to staff, ever carries a patient name, flag reason, field value or other health content.
 
-### Story 3.1: Notification outbox and the in-app inbox for staff
+### Story 3.1: Notification outbox, event triggers and the staff inbox
 
 As a staff member,
 I want to see updates addressed to me in an inbox,
@@ -884,23 +937,26 @@ So that events that matter reach me inside the app.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `notifications` table exists, owned by the `notifications` module, with `clinic_id`, recipient auth user id, event type, subject, `dedupe_key`, payload, status, scheduled time and read state, with row-level security so a user reads only their own rows (AR12, FR-45)
-**And** pgTAP tests prove a user cannot read another user's notifications, Staff of Clinic X cannot read Clinic Y's, and a Patient reads only their own (AR18)
+**Then** a `notifications` table exists, owned by the `notifications` module, with `clinic_id`, recipient auth user id, event type, subject, `dedupe_key`, payload, status, scheduled time and read state, with row-level security so a user reads and marks read only their own rows (AR12, FR-45)
+**And** pgTAP tests prove a user cannot read or insert another user's notifications and Staff of Clinic X cannot read Clinic Y's (AR18)
 
-**Given** the SQL function `app.emit_event(type, recipient_user_id, subject, dedupe_key, payload)`
-**When** it is called
-**Then** it accepts only event types from a closed enumeration, writes one notification per recipient, and treats a repeated `dedupe_key` as a no-op (AR12)
-**And** a role-wide event fans out to one row per user holding that role in the clinic
-**And** the function runs as invoker or, where definer, states its reason, sets an empty `search_path`, lives in a private schema and has `EXECUTE` revoked from public, `anon` and `authenticated` (AR17)
+**Given** the SQL function `app.emit_event(type, recipient, subject, dedupe_key, payload, mode)`
+**When** it is applied
+**Then** it is a definer function in a private schema with an empty `search_path`, its `EXECUTE` is revoked from `public`, `anon` and `authenticated`, and it is called only from database triggers and named SQL functions listed in a comment beside it, so no client can raise or forge an event, proven by a pgTAP case where a patient calling it is refused (AR12, AR17)
+**And** it accepts only event types from a closed list, uniqueness is on `(dedupe_key, recipient)`, mode `insert` ignores a repeated key and mode `update_unresolved` replaces the payload of an existing unresolved item with the same key
+
+**Given** a role-wide event
+**When** it is emitted
+**Then** it fans out one row per active user holding that role in the clinic, and if none is active it goes to the clinic's Admins (AR12)
+**And** an event for a patient who has no sign-in account yet is skipped without failing the action that caused it (AR12)
 
 **Given** a staff member with notifications
-**When** they open More, Updates
-**Then** the inbox lists them newest first, unread ones marked "New" in words, and opening one marks it read (FR-45, UX-DR21)
-**And** an empty inbox says "No updates yet." and a user sees only their own notifications (FR-45)
+**When** they open More, Updates, which this story adds
+**Then** the inbox lists them newest first, unread ones marked "New" in words, opening one marks it read, and an empty inbox says "No updates yet." (FR-45, UX-DR21)
 
 **Given** the demo seed
 **When** it runs
-**Then** one invented notification exists for the demo Coordinator so the inbox can be demonstrated (FR-48)
+**Then** one invented notification exists for the demo Coordinator (FR-48)
 
 ### Story 3.2: Needs-attention block on Today
 
@@ -912,87 +968,99 @@ So that I act on the right thing first.
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `alerts` table exists, owned by the `notifications` module, with `clinic_id`, event type, patient, summary, created time and a resolved time, with row-level security and pgTAP tests (AR12, AR18)
-**And** alerts are raised only through `app.emit_event` (AR12)
+**Then** an `alerts` table exists, owned by the `notifications` module, with `clinic_id`, event type, target role, patient, summary, created time, resolved time and who resolved it, with row-level security so only Staff of the clinic read it and a Patient never does, proven by pgTAP (AR12, AR18, FR-5)
 
-**Given** unresolved alerts for the clinic
+**Given** unresolved alerts
 **When** a Staff user opens Today
-**Then** a "Needs attention (N)" block lists them, each row with an icon, a plain sentence, the patient name, the time and one "Open" button, unresolved above resolved (FR-9, UX-DR12)
-**And** Open goes to the patient record and does not resolve the alert by itself (UX-DR12)
+**Then** a "Needs attention (N)" block lists the alerts for their role, each with an icon, a plain sentence, the patient name, the time and one "Open" button, unresolved above alerts resolved in the last 7 days (FR-9, UX-DR12)
+**And** Open goes to the right place on the patient record and does not resolve the alert by itself
 
-**Given** an alert is resolved by its destination action
-**When** the user returns to Today
-**Then** it moves to the resolved group and the count drops (FR-9)
+**Given** an alert
+**When** its resolving action is done (defined by the story that raises it) or Staff choose Resolve
+**Then** it moves to resolved with who resolved it and when, and the count drops (FR-9)
 
 **Given** no alerts
 **When** Today loads
-**Then** it says "Nothing needs attention." (UX-DR21)
-**And** the block works the same on phone and laptop, with a loading skeleton while it loads (NFR2, UX-DR21)
+**Then** it says "Nothing needs attention." and the block works the same on phone and laptop (NFR2, UX-DR21)
 
 **Given** the demo seed
 **When** it runs
-**Then** one invented alert for the demo clinic exists so the block can be demonstrated before real alert sources arrive in later epics (FR-48)
-**And** a Patient cannot read any alert and Staff of Clinic X cannot read Clinic Y's, proven by pgTAP (FR-4, FR-5)
+**Then** one invented alert exists so the block can be demonstrated before real sources arrive in later epics (FR-48)
 
-### Story 3.3: Email delivery of notifications by the database scheduler
+### Story 3.3: Send email notifications promptly
 
 As a patient or staff member,
-I want important updates to also reach my email,
-So that I do not have to keep the app open to know something happened.
+I want important updates to reach my email quickly,
+So that I do not need to keep the app open to know something happened.
 
 **Acceptance Criteria:**
 
-**Given** pending notifications
-**When** the hourly scheduled job runs in the database
-**Then** it calls the sender route through `pg_net` with a signed header, and the route accepts only signed calls and answers an unsigned call with a refusal (AR12, AR6)
-**And** the sender is the only code that reads pending notifications with the service-role key, inside `lib/privileged`, which takes no clinic from input (AR6)
+**Given** a new notification of an email-worthy type (invite, sign-in, landed, help, request decision, check-in ready)
+**When** it is created
+**Then** the database calls the sender route at once through `pg_net` with a signed header, and the route accepts only signed calls and refuses unsigned ones (AR12, AR6)
 
-**Given** a pending email notification
-**When** the sender delivers it
-**Then** the email has a subject and body with no health content, only a prompt to open the app, and the status becomes sent (FR-46, AR12)
-**And** locally the message appears in Mailpit
+**Given** the sender
+**When** it picks up notifications
+**Then** it claims each row so overlapping runs cannot send the same email twice, re-checks at send time that the recipient is still active and uses their current email, and records the attempt (AR12, NFR7)
+**And** it is the only code that reads pending notifications with the service-role key, inside `lib/privileged` (AR6)
 
-**Given** a failed send
-**When** the sender retries
-**Then** up to three attempts are made with increasing delay, each failure records its error text, and after the last the status is failed (FR-46)
-**And** the in-app notification still exists after a failed email (FR-46)
+**Given** any event type
+**When** its email is built
+**Then** subject and body say only that there is an update and how to open the app, with no patient name, flag reason, field value or health content, proven by a unit test over every type in the closed list (FR-46, AR12)
 
-**Given** the scheduler runs twice for the same window
-**When** both complete
-**Then** no notification is sent twice and a pgTAP or integration test proves it (AR12, NFR7)
+**Given** the prototype
+**When** emails are sent
+**Then** they go through the development mail setup (Mailpit locally, sandbox SMTP when hosted), the provider and domain change only by configuration, and a developer command runs the sender on demand so end-to-end tests do not wait for a schedule (FR-46, AR25)
 
-**Given** an email provider not yet configured
-**When** the app runs in the prototype
-**Then** it sends through the development mail setup, and the provider and domain are changed only by configuration (FR-46, AR25)
-
-### Story 3.4: Rate limits and browser hardening
+### Story 3.4: Retry sweep by the database scheduler
 
 As a patient or staff member,
-I want the sign-in and invite pages protected against repeated guessing,
+I want a failed email to be retried,
+So that a passing outage does not lose an important update.
+
+**Acceptance Criteria:**
+
+**Given** `pg_cron`
+**When** the hourly sweep runs
+**Then** it calls the sender for notifications that failed or were not yet sent, through the same signed route (AR12)
+
+**Given** a failed send
+**When** retries happen
+**Then** there are three attempts in all (immediately, then at the next two hourly sweeps), each failure records its error text, and after the third the status is failed (FR-46)
+**And** the in-app notification exists whatever happens to the email (FR-46)
+
+**Given** the sweep runs twice for the same window
+**When** both complete
+**Then** no email is sent twice, proven by an integration test (NFR7)
+**And** the scheduled function takes no client parameters and cannot be called by `authenticated`, proven by pgTAP (AR17)
+
+### Story 3.5: Rate limits and browser hardening
+
+As a patient or staff member,
+I want sign-in and invite pages protected against repeated guessing,
 So that nobody can break into an account by trying again and again.
 
 **Acceptance Criteria:**
 
-**Given** the sign-in, invite, resend and upload endpoints
+**Given** the migrations
+**When** this story is applied
+**Then** a rate-limit table and helper exist, with row-level security and pgTAP tests, storing counts per email and per network address in the database rather than in server memory (AR21, AR18)
+
+**Given** the patient link-and-code request and resend endpoints
 **When** a client exceeds the limit
-**Then** the endpoint answers with the `rate_limited` result and a message saying when to try again (AR21, AR7)
-**And** the limit applies per email address and per network address, and a legitimate user under the limit is unaffected
+**Then** the endpoint answers with the `rate_limited` result and says when to try again, a legitimate user under the limit is unaffected, and the per-address limit allows for a whole clinic behind one network address (AR21, AR7)
+**And** each later story that adds a public endpoint (invite, upload, consultation request) applies the helper in its own criteria
 
 **Given** any page
 **When** it loads
-**Then** a strict content security policy and frame, referrer and permissions headers are set (AR21)
-**And** an automated check fails if a response is missing the headers
+**Then** a strict content security policy and frame, referrer and permissions headers are set, and an automated check fails if a response lacks them (AR21)
+**And** the policy permits only what the app needs; the photo conversion and storage upload stories extend it and test that uploads still work
 
 **Given** a repeated request for a link
-**When** it comes within the cooldown window
-**Then** it is refused and the message shows the seconds left (UX-DR21)
-**And** the cooldown applies whether or not the email exists, so the response does not reveal that (AR16)
+**When** it comes within the cooldown
+**Then** it is refused with the seconds left, with the same response whether or not the email exists (UX-DR21, AR16)
 
-**Given** unit tests
-**When** they run
-**Then** they cover under-limit, at-limit, over-limit and the window resetting (AR21)
-
-### Story 3.5: Send an invite to a patient
+### Story 3.6: Send an invite to a patient
 
 As a coordinator,
 I want to send a patient an invite from their record,
@@ -1002,58 +1070,102 @@ So that they can open their plan on their own phone.
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `invites` table exists, owned by the `access` module, storing a hashed token, the email, `clinic_id`, role patient, the patient, an expiry and a used time, with row-level security so only Staff of the clinic can create or read invites, and pgTAP tests (AR16, AR18)
+**Then** an `invites` table exists, owned by the `access` module, storing a hashed token, a hashed code, the email, `clinic_id`, the patient, an expiry, a status (Sent, Accepted, Expired, Email failed, Revoked) and an accepted time, with row-level security so only Staff of the clinic create or read invites, and pgTAP tests (AR16, AR18)
 
 **Given** a patient record
 **When** Staff press Send invite on Overview, or choose "Send invite now" at the end of onboarding
-**Then** an invite is created through `lib/privileged`, which creates the patient's sign-in account with `app_role` patient and links it to the patient record, taking clinic and role from the invite row and never from input (AR6, AR16, FR-19)
-**And** an email with a single-use link and a code is queued through `app.emit_event`, and Overview shows the invite status "Sent" with the time (FR-19)
+**Then** the invite is created by `lib/privileged` with the clinic taken from the Staff caller's verified token, the role fixed to patient and the patient checked to belong to that clinic, and no sign-in account is created yet (AR6, AR16, FR-19)
+**And** the email is built and sent at once from `lib/privileged`, and the raw token and code exist only in that email, never in the database, the notification outbox or a log (AR16)
 
-**Given** an invite already sent
-**When** Staff press Resend
-**Then** a new invite replaces the old, the old link stops working, and the cooldown and rate limit apply (FR-19, AR16)
+**Given** an invite
+**When** Overview shows it
+**Then** it shows the status in words with the time, and Send invite is replaced by "Signed in" once accepted (FR-19)
 
-**Given** onboarding
-**When** the coordinator finishes
-**Then** the success screen shows the invite status and an "Add documents now" card that is disabled with the words "Documents come next" until the Documents epic is built (UX-DR14)
-**And** a Patient role cannot send invites (FR-3)
+**Given** Resend
+**When** Staff press it within the rate limit
+**Then** a new token and code replace the old ones, the old link stops working, and the patient's email can be corrected first through Edit details (FR-19, AR21)
 
-**Given** an invite expiry
-**When** it passes
-**Then** the link is refused with the message "That link has expired. Ask your clinic for a new one." `[ASSUMPTION: 24 hours]` (FR-19)
+**Given** an invite
+**When** 7 days pass without redemption
+**Then** it expires and the link shows "That link has expired. Ask your clinic for a new one." (FR-19)
+**And** the onboarding success screen shows the invite status and an "Add documents now" card disabled with "Documents come next" until Epic 7 (UX-DR14)
 
-### Story 3.6: Redeem an invite and sign in by link or code
+### Story 3.7: Redeem an invite
 
 As a patient,
-I want to open my invite and sign in without a password,
+I want to open my invite and get into my account without a password,
 So that I can see my information without learning a new system.
 
 **Acceptance Criteria:**
 
 **Given** the invite email
 **When** the patient opens the link on a phone
-**Then** a page shows "Open your AyurSaathi account" with one button, and pressing the button redeems the invite and signs the patient in (FR-2, AR16)
-**And** merely loading the link, as a mail scanner would, does not use it up, proven by a test that requests the page by GET and then redeems (AR16)
+**Then** a page shows "Open your AyurSaathi account" with one button, and merely loading the page, as a mail scanner would, does not use the invite, proven by a test that loads it and then redeems (FR-2, AR16)
 
-**Given** the link fails or has been used
-**When** the patient is shown the sign-in screen
-**Then** it offers a six-digit code field using one-time-code autofill, with the words "Type the code from the email" (FR-2, UX-DR27)
-**And** the message for a used or expired link is "That link has already been used or has expired. Type the code from the email, or ask for a new link." (FR-2, UX-DR21)
+**Given** the patient presses the button, or types the six-digit code from the email with one-time-code autofill
+**When** the invite is valid
+**Then** `lib/privileged` creates the patient's sign-in account at this moment, with `app_role` patient, the clinic and the patient taken only from the invite row, marks the invite Accepted, and signs the patient in by generating and verifying a one-time sign-in token on the server in the same request (FR-2, AR6, AR16)
+**And** the invite can be redeemed only once, and the email it was sent to must not already belong to a staff account, otherwise redemption is refused with a message to contact the clinic
 
-**Given** a returning patient with no invite
-**When** they enter their email on the sign-in screen
-**Then** a new link and code are sent, the response is the same whether or not the email exists, and the cooldown and rate limit apply (FR-2, AR16, AR21)
+**Given** another user is signed in on that browser
+**When** the patient redeems
+**Then** the app asks to sign that user out first, naming the account, so a staff session is never replaced silently (AR16)
 
-**Given** a link or code
-**When** it expires
-**Then** it is refused, the patient can still sign in with a valid code until it expires, and the expiry period is stated on the screen and in the email `[ASSUMPTION: one hour]` (FR-2, NFR8)
+**Given** a used, revoked or expired invite
+**When** it is opened
+**Then** the patient sees "That link has already been used or has expired. Ask your clinic for a new one." (FR-2, UX-DR21)
+
+### Story 3.8: Returning patients sign in by link or code
+
+As a patient,
+I want to sign in again later with my email,
+So that I can come back to my plan, including after I have gone home.
+
+**Acceptance Criteria:**
+
+**Given** the patient sign-in screen
+**When** a patient enters their email
+**Then** a link and a six-digit code are sent only if the email belongs to an active patient account, and the response is the same in every case, including for a staff email, so the screen reveals nothing and gives staff no passwordless sign-in (FR-2, AR16)
+**And** the cooldown and rate limit apply (AR21)
+
+**Given** the link or the code
+**When** it is used within one hour
+**Then** the patient is signed in; after an hour, or once used, it is refused and the screen offers to send a new one (FR-2) `[ASSUMPTION: one hour]`
+
+**Given** a link from a notification email to a specific screen, such as a follow-up check-in
+**When** the patient is signed out
+**Then** after signing in they land on that screen, with the destination taken only from an allowlist of app paths (AR16, UX-DR21)
 
 **Given** a signed-in patient
 **When** they request any clinic route
 **Then** they receive "You do not have access to this page." with a link to their home (FR-3)
-**And** public sign-up stays disabled and the redirect address is limited to the configured allowlist (AR16)
 
-### Story 3.7: Patient Home with the journey bar and updates
+### Story 3.9: Revoke patient access and change a patient's email
+
+As a coordinator or admin,
+I want to cancel an invite sent to the wrong address and end a patient's access,
+So that nobody other than the patient can read their record.
+
+**Acceptance Criteria:**
+
+**Given** an invite that is not yet accepted
+**When** Staff choose Revoke invite and confirm
+**Then** its status becomes Revoked and the link and code stop working at once (FR-19, AR16)
+
+**Given** a patient with a sign-in account
+**When** a Coordinator or Admin chooses Disable patient access and confirms by naming the patient
+**Then** the account is disabled through `lib/privileged`, `app.user_role()` returns no role for it at once, existing sessions stop working within the token lifetime, and a pgTAP case proves an old token is refused (AR5, AR6)
+**And** access can be re-enabled the same way
+
+**Given** a patient whose email must change after the account exists
+**When** Staff save the new email through Edit details
+**Then** `lib/privileged` changes the sign-in account's email, pending invites to the old address are revoked, and the patient is told at both addresses that the email changed, without health content (FR-13, AR6)
+
+**Given** a Patient
+**When** they try any of these actions
+**Then** they are refused (FR-3)
+
+### Story 3.10: Patient Home with the journey bar and updates
 
 As a patient,
 I want a Home screen that shows where I am in my journey and what is new,
@@ -1061,32 +1173,32 @@ So that I know what happens next without searching WhatsApp.
 
 **Acceptance Criteria:**
 
-**Given** a signed-in patient
+**Given** a signed-in patient with an open episode
 **When** Home loads
-**Then** it shows a greeting, a compact "Step N of 6, Phase" line with a six-segment bar, completed steps marked "Done" and the current step "Now", and the journey bar reads to a screen reader as "Step 4 of 6, Arrival, now" (FR-12, UX-DR6, UX-DR23)
-**And** a card for today shows what matters now, or "Nothing is planned for today." when there is nothing (FR-12)
+**Then** it shows a greeting and a "Step N of 6, <phase name from settings>" line with a six-segment bar, completed steps marked "Done" and the current step "Now", read by a screen reader as "Step 4 of 6, Arrival, now" (FR-12, UX-DR6, UX-DR23)
+
+**Given** the today card
+**When** Home loads
+**Then** it shows, by phase of the open episode: Enquiry, Assessment or Planning: "Your clinic is preparing your visit."; Arrival: the arrival details when entered (Epic 4) or "Your travel details will appear here."; Care: today's published plan summary and whether a check-in is due (Epics 5 and 6) or "Nothing is planned for today."; Continuity: the next follow-up date (Epic 9) (FR-12)
+**And** a patient with no open episode sees "Your visit is complete. Your clinic will be in touch." instead of the journey bar (FR-12)
 
 **Given** the patient shell
 **When** it renders
-**Then** the bottom bar shows Home, Plan, Documents and Check-in with icons and labels and 56px targets, and Plan, Documents and Check-in show their empty states ("Your plan for this day has not been published yet.", "No documents yet.", "Your next check-in is not scheduled.") until their epics are built (UX-DR9, UX-DR21)
+**Then** the bottom bar shows Home, Plan, Documents and Check-in with icons, labels and 56px targets, and Plan, Documents and Check-in show their empty states until their epics are built (UX-DR9, UX-DR21)
 
 **Given** Updates on Home
-**When** notifications exist for the patient
-**Then** they list newest first with "New" in words, and opening one marks it read, with a Patient seeing only their own (FR-45, FR-5)
-**And** the footer shows the clinic phone and "In an emergency, call your local emergency number." (UX-DR22)
+**When** notifications exist
+**Then** they list newest first with "New" in words, opening one marks it read, and a patient sees only their own (FR-45, FR-5)
+**And** the footer shows the clinic phone from settings and "In an emergency, call your local emergency number." (UX-DR22)
 
 **Given** the Settings link in the Home header
 **When** the patient opens it
-**Then** they can choose the theme (System, Light or Dark) and Sign out, which ends the session and clears the app shell cache (UX-DR1, AR20)
-
-**Given** a phone under 600px and a laptop
-**When** Home is viewed
-**Then** it is one column up to 560px wide, centred, at 18px body text and usable at 200% zoom without truncated labels (UX-DR2, UX-DR24, UX-DR23)
-**And** the patient sees no clinic-area navigation and no other patient's data, proven by an end-to-end test with Patient A and Patient B (FR-5, AR18)
+**Then** they can choose the theme (System, Light or Dark) and Sign out, which ends the session and clears the app-shell cache (UX-DR1, AR20)
+**And** Home is one column up to 560px, 18px body text, usable at 200% zoom, and passes the automated accessibility check; an end-to-end test proves Patient A never sees Patient B's data (UX-DR2, UX-DR23, UX-DR24, FR-5)
 
 ## Epic 4: Arrival
 
-The clinic enters pickup and stay, the patient adds flight details and sees the arrival-day card, and taps I have landed or I need help. The coordinator is alerted. Covers FR-25, FR-26, FR-27, FR-28, FR-29, FR-30. The `arrival` module owns `flights`, `pickups`, `accommodations` and `arrival_events`; alerts are raised only through `app.emit_event` (AR8, AR12). This epic completes the walking skeleton and gives the needs-attention block its first real alerts.
+The clinic enters pickup and stay, the patient adds flight details and sees the arrival-day card, and taps I have landed or I need help. The coordinator is alerted. Covers FR-25, FR-26, FR-27, FR-28, FR-29, FR-30. The `arrival` module owns `flights`, `pickups`, `accommodations` and `arrival_events`; Coordinators and Admins write them, Doctors read them, per the PRD role table (AR8, AR10). Patients never write these tables directly: their changes go through named SQL functions, and alerts are raised by triggers through `app.emit_event` (AR12, AR14). All arrival times are entered and shown in the arrival airport's zone, which defaults to the clinic's zone, labelled with the city. This epic completes the walking skeleton.
 
 ### Story 4.1: Flight details
 
@@ -1098,22 +1210,25 @@ So that everyone knows when to expect the patient.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `flights` table exists, owned by the `arrival` module, with `clinic_id`, the episode, flight number, airport, arrival instant in UTC, who entered it and who last changed it, with row-level security and pgTAP tests (AR3, AR4, AR8, AR18)
-**And** Staff can read and write flights of their clinic, a Patient can read and write only the flights of their own episode, and a Patient cannot read another patient's flight (FR-5, FR-25)
-
-**Given** the patient record's Arrival tab
-**When** Staff open it
-**Then** a Flight section shows the flight number and arrival time in the viewer's local time with the clinic time in brackets when the zones differ, or "Not yet confirmed." (FR-25, UX-DR20)
-**And** Staff can add or change the flight on phone or laptop (NFR2)
+**Then** a `flights` table exists, owned by the `arrival` module, with `clinic_id`, the episode, flight number, arrival airport, arrival instant in UTC, `updated_by` and `updated_at`, one inbound flight per episode, with row-level security and pgTAP tests (AR3, AR4, AR8, AR18)
+**And** Coordinators and Admins write, Doctors read, a Patient reads only their open episode's flight, and a Doctor's write is refused, proven by pgTAP (FR-25, FR-5, AR10)
 
 **Given** a signed-in patient
-**When** they open Arrival details from Home
-**Then** they can add or change their own flight number and arrival date and time (FR-25)
+**When** they open Arrival details from Home and add or change their flight
+**Then** the change goes through `set_own_flight(flight_number, arrival_local_time)`, which takes the episode from the caller's open episode, sets `updated_by` from the caller, and is allowed only while that episode is open and not past the Arrival phase; the patient has no direct write on the table, proven by pgTAP (FR-25, AR14)
+
+**Given** an arrival time
+**When** it is entered by a patient or Staff
+**Then** it is read as the local time at the arrival airport (the clinic's zone by default), stored in UTC, and shown everywhere as "Thu 12 Nov, 19:05 Pune time", with the viewer's own time in brackets when their zone differs (FR-25, AR11, UX-DR20)
 
 **Given** invalid input
 **When** the form is submitted
 **Then** a flight number not in airline-code-plus-number form shows "Enter the flight number as airline code and number, for example LX 148." and a missing time shows "Enter the arrival date and time." `[ASSUMPTION: flight number format check]` (FR-25)
-**And** the entered time is stored in UTC using the patient's time zone and shown back correctly to a viewer in a different zone (FR-25, AR11)
+
+**Given** a patient and Staff edit the flight at nearly the same time
+**When** the second save is from an older version
+**Then** it is refused with `conflict` and the user sees the current value (AR7)
+**And** Staff can remove a flight entered by mistake, with a confirmation naming it (UX-DR26)
 
 ### Story 4.2: Pickup details
 
@@ -1126,44 +1241,38 @@ So that the patient knows who is meeting them.
 **Given** the migrations
 **When** this story is applied
 **Then** a `pickups` table exists, owned by the `arrival` module, with `clinic_id`, the episode, driver name and phone, car, plate, meeting point and pickup time, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** Staff write pickups, a Patient can only read the pickup of their own episode and cannot write one, and cannot read another patient's pickup (FR-26, FR-5)
+**And** Coordinators and Admins write, Doctors read, a Patient reads only their open episode's pickup and cannot write (FR-26, FR-5, AR10)
 
 **Given** the Arrival tab
 **When** Staff enter and save pickup details
-**Then** they show in a Pickup section and are visible to the patient (FR-26)
-**And** a missing driver phone shows "Not yet confirmed." and does not block saving the rest (FR-26, UX-DR21)
+**Then** they show in a Pickup section visible to the patient, a missing driver phone shows "Not yet confirmed." without blocking the save, and a phone must include a country code (FR-26, UX-DR21)
 
-**Given** a phone number
-**When** it is saved
-**Then** it must include a country code, with the message "Enter the phone number with country code, for example +91 98765 43210." (FR-26)
+**Given** a saved change
+**When** at least one field actually changed
+**Then** a trigger notifies the patient "Your pickup details were updated." through `app.emit_event`, with repeated saves within 10 minutes sharing one notification; a save with no change notifies no one (FR-26, AR12)
 
-**Given** a change by Staff
-**When** it is saved
-**Then** a notification "Your pickup details were updated." is sent to the patient through `app.emit_event`, and the patient's Updates shows it (FR-26, AR12)
-
-### Story 4.3: Accommodation and check-in details
+### Story 4.3: Stays and room changes
 
 As a coordinator,
-I want to enter where the patient is staying and when they can check in,
-So that the patient knows where to go.
+I want to record where the patient stays, including a move to another room or place during the visit,
+So that the patient always knows where to go.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `accommodations` table exists, owned by the `arrival` module, with `clinic_id`, the episode, place, room, check-in time and check-out time, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** Staff write accommodation, a Patient can only read their own episode's accommodation, and cannot read another patient's (FR-27, FR-5)
+**Then** an `accommodations` table exists, owned by the `arrival` module, with `clinic_id`, the episode, place, room, check-in and check-out times in the clinic's zone, with row-level security and pgTAP tests, allowing several stays per episode that do not overlap (AR3, AR8, AR18, BRD FR-CAR-06)
+**And** Coordinators and Admins write, Doctors read, a Patient reads only their open episode's stays (FR-27, FR-5)
 
 **Given** the Arrival tab
-**When** Staff save accommodation details
-**Then** they show in a Stay section and are visible to the patient (FR-27)
-**And** a check-out earlier than check-in is refused with "Check-out must be after check-in." (FR-27)
+**When** Staff add a stay or record a room change
+**Then** the stays list in date order, the current one is marked "Now", and a check-out before check-in or an overlap is refused with a message that says which dates clash (FR-27)
 
-**Given** a change by Staff
+**Given** a saved change that actually changed something
 **When** it is saved
-**Then** the patient is notified through `app.emit_event` with "Your stay details were updated." (FR-27, AR12)
+**Then** the patient is notified "Your stay details were updated." through a trigger and `app.emit_event`, at most once per 10 minutes (FR-27, AR12)
 
-### Story 4.4: Arrival-day card on the patient's Home
+### Story 4.4: Arrival-day card and arrivals on Today
 
 As a patient,
 I want one card that shows my flight, who meets me and where I am staying,
@@ -1171,22 +1280,22 @@ So that I have everything I need on arrival day in one place.
 
 **Acceptance Criteria:**
 
-**Given** a patient whose episode has a flight or is in the Arrival phase
+**Given** a patient whose open episode is in the Arrival phase, or whose arrival day is today or tomorrow
 **When** Home loads
-**Then** an arrival-day card shows the flight number and arrival time in the patient's local time with the Pune time in brackets, the driver's name and phone, the car and meeting point, and the place they stay (FR-28, UX-DR20)
-**And** any field Staff have not entered shows "Not yet confirmed." and the card still shows what is known (FR-28, UX-DR21)
+**Then** an arrival-day card shows the flight and arrival time in the airport's local time, the driver's name and phone, the car, plate and meeting point, and the current stay (FR-28, UX-DR20)
+**And** any field not yet entered shows "Not yet confirmed." and the rest still shows (FR-28, UX-DR21)
 
-**Given** Staff change pickup or stay details
-**When** the patient reloads Home
-**Then** the card shows the new values (FR-28)
-
-**Given** the card on a phone
-**When** it is viewed at 200% zoom and at 320px width
-**Then** no label is truncated and the exact values (flight number, phone, plate) are never abbreviated (UX-DR2, UX-DR23)
-
-**Given** a patient with no flight, pickup or stay yet
+**Given** the episode moves to Care, or the day after arrival has passed
 **When** Home loads
-**Then** the card is not shown and Home shows only the journey bar and today card (FR-28)
+**Then** the card is no longer shown (FR-28)
+
+**Given** the card on a phone at 200% zoom and 320px width
+**When** it is viewed
+**Then** no label is truncated, exact values (flight number, phone, plate) are never abbreviated, and the automated accessibility check passes (UX-DR2, UX-DR23)
+
+**Given** Staff
+**When** they open Today or the Patients list
+**Then** Today lists patients arriving today with their arrival time, and the Patients list shows an "Arriving today" badge for them (FR-9, UX-DR13)
 
 ### Story 4.5: "I have landed" and "I need help"
 
@@ -1198,48 +1307,47 @@ So that someone knows and can act.
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `arrival_events` table exists, owned by the `arrival` module, with `clinic_id`, the episode, event type (landed or help), time and who recorded it, with row-level security and pgTAP tests (AR8, AR18)
-**And** a Patient can create events only for their own episode and cannot read another patient's events (FR-5)
+**Then** an `arrival_events` table exists, owned by the `arrival` module, with `clinic_id`, the episode, type (landed or help), time and who recorded it, with row-level security and pgTAP tests; patients create events only through `record_arrival_event(type)`, which uses the caller's open episode (AR8, AR14, AR18, FR-5)
 
 **Given** the arrival-day card
 **When** the patient taps "I have landed"
-**Then** an event is saved, a Coordinator alert and notification are raised through `app.emit_event` with a `dedupe_key`, and the screen says "Thank you. Your coordinator has been told." with the clinic phone (FR-29, AR12)
-**And** tapping twice raises one alert, not two (FR-29, NFR7)
+**Then** the event is saved, a trigger raises a Coordinator alert and notification through `app.emit_event`, landed is recorded once per episode, and the screen says "Thank you. Your coordinator has been told." with the clinic phone (FR-29, AR12)
 
 **Given** the patient taps "I need help with my pickup"
 **When** the event is saved
-**Then** the coordinators are alerted, and the screen shows the clinic phone and "For a medical emergency, call your local emergency number." (FR-29, UX-DR22)
-**And** the screen states that this tells the coordinator about the pickup and is not for medical emergencies (UX-DR22, BR-06)
+**Then** the coordinators are alerted, a new help request is raised again if the previous one was already resolved, and the screen shows the clinic phone and "For a medical emergency, call your local emergency number." and states that this button is about the pickup (FR-29, UX-DR22, BR-06)
+
+**Given** the patient is offline or the request fails
+**When** they tap either button
+**Then** the screen says "Not sent. Please call the clinic on <clinic phone>." and never shows the thank-you message (FR-29, UX-DR21)
 
 **Given** an alert
-**When** it appears on Today
-**Then** it shows the patient name, the event in words ("Landed" or "Needs help with pickup") and the time (FR-29, UX-DR12)
-**And** a Coordinator can mark it handled on the Arrival tab and it moves to resolved (FR-9, FR-29)
+**When** it shows on Today
+**Then** it reads "Landed" or "Needs help with pickup" with the patient name and time, and a Coordinator resolves it with "Mark handled" on the Arrival tab (FR-9, FR-29)
 
-### Story 4.6: Alert when the patient changes flight details
+### Story 4.6: Alert when the patient adds or changes flight details
 
 As a coordinator,
-I want to be told when a patient changes their flight,
-So that I can re-plan the pickup in time.
+I want to be told when a patient adds or changes their flight,
+So that I can arrange or re-plan the pickup in time.
 
 **Acceptance Criteria:**
 
-**Given** a patient edits their flight number or arrival time
-**When** the change is saved
-**Then** an alert is raised for the coordinators naming the patient and showing the old and new values, through `app.emit_event` (FR-30, AR12)
+**Given** a patient adds a flight for the first time, or changes the flight number or arrival time
+**When** `set_own_flight` saves it
+**Then** a trigger raises a Coordinator alert naming the patient and showing the old value (or "none") and the new value, through `app.emit_event` (FR-30, AR12)
 
 **Given** Staff edit the same flight
 **When** the change is saved
-**Then** no alert is raised, because Staff made the change (FR-30)
+**Then** no alert is raised (FR-30)
 
-**Given** the patient edits the flight several times within a short window
-**When** the alerts are raised
-**Then** repeated edits update the same unresolved alert rather than creating many, and the alert shows the latest change (FR-30, NFR7)
+**Given** the patient changes the flight again while the alert is unresolved
+**When** the change is saved
+**Then** the same alert is updated (mode `update_unresolved`), keeping the value from before the first unresolved change as "old" and showing the latest as "new" (FR-30, NFR7)
 
-**Given** an alert
+**Given** the alert
 **When** the coordinator opens it
-**Then** it goes to the Arrival tab's Flight section, and marking it handled resolves it (FR-9, FR-30)
-**And** a pgTAP test proves a Patient cannot read alerts (FR-5)
+**Then** it goes to the Arrival tab's Flight section, and Mark handled resolves it; a Patient cannot read alerts, proven by pgTAP (FR-9, FR-30, FR-5)
 
 ### Story 4.7: Walk the arrival journey end to end
 
@@ -1250,15 +1358,14 @@ So that the walking skeleton is proven working, not assumed.
 **Acceptance Criteria:**
 
 **Given** a clean demo database and Mailpit
-**When** the end-to-end test for UJ-1 runs
-**Then** a coordinator creates a patient with an invite, the invite arrives in Mailpit, the patient redeems it on a phone-sized browser, Home shows the journey bar, the patient adds a flight, sees the pickup and stay the coordinator entered, taps "I have landed", and the coordinator's Today shows the alert (UJ-1, FR-1 to FR-30)
-**And** the test also runs the failure case, where the link is used by a mail scanner first and the patient signs in with the typed code instead (UJ-1)
-**And** the end-to-end suite runs in Chromium, Firefox and WebKit at phone and laptop sizes, covering the current Chrome, Safari, Edge and Firefox (BRD NFR-12)
+**When** the end-to-end test for UJ-1 runs, with the sender run on demand
+**Then** a coordinator creates a patient and sends the invite, the invite arrives in Mailpit, the patient redeems it on a phone-sized browser, Home shows the journey bar, the patient adds a flight, sees the pickup and stay the coordinator entered, taps "I have landed", and the coordinator's Today shows the alert (UJ-1; FR-1 to FR-3, FR-7, FR-9, FR-12 to FR-16, FR-19, FR-25 to FR-30, FR-45, FR-46)
+**And** it also runs the failure case, where the invite page is loaded first by a mail scanner and the patient still redeems it
 
 **Given** the run
 **When** it completes
-**Then** the isolation suite is run in the same job and passes, including Patient A against Patient B and Clinic X against Clinic Y for every table added in Epics 1 to 4 (FR-4, FR-5, FR-6)
-**And** a short written demo script for the same journey is saved in `docs/demo/arrival.md` for Ravi to follow by hand
+**Then** the isolation suite passes for every table, view, function and bucket added in Epics 1 to 4, the automated accessibility check passes on every patient route, and the end-to-end suite runs in Chromium, Firefox and WebKit at phone and laptop sizes (FR-4, FR-5, FR-6, BRD NFR-12, NFR8)
+**And** a demo script for this journey is saved in `docs/demo/arrival.md`
 
 **Given** the demo script
 **When** Ravi follows it on a phone and a laptop
@@ -1266,7 +1373,7 @@ So that the walking skeleton is proven working, not assumed.
 
 ## Epic 5: Plan and patient day
 
-The Doctor records findings, notes and medicines. The coordinator builds, copies and publishes the Day Plan and records treatments given. The patient sees the schedule and diet, and ticks medicines taken. Covers FR-31, FR-32, FR-33, FR-34, FR-35. The `care` module owns `notes`, `medicines`, `medicine_intakes`, `day_plans`, `plan_items`, `treatments_given` and `check_ins` (AR8, AR13). Publishing is one SQL function, `publish_day_plan` (AR14). The app records and alerts; it never advises (BR-06).
+The Doctor records findings, notes and medicines. The coordinator builds, copies and publishes the Day Plan and records treatments given. The patient sees the schedule, meals and medicines, ticks medicines taken, and reads what the Doctor shares in a "From your doctor" section. Covers FR-31, FR-32, FR-33, FR-34, FR-35. The `care` module owns `notes`, `medicines`, `medicine_intakes`, `day_plans`, `plan_items` and `treatments_given` (AR8). Multi-row changes are single SQL functions: `change_medicine`, `stop_medicine` and `publish_day_plan` (AR14). Admin reads all clinical records and a Coordinator reads Shared notes only, per the PRD role table and the owner's decision (AR10). Medicine dates are dates in the clinic's zone. The app records and alerts; it never advises (BR-06).
 
 ### Story 5.1: Doctor's findings and notes
 
@@ -1278,112 +1385,107 @@ So that the clinical record is complete and the patient sees only what I choose 
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `notes` table exists, owned by the `care` module, with `clinic_id`, the episode, a kind (finding or note), the text, the author, the time and `visibility` of `shared` or `staff_only`, with row-level security (AR8, AR10, AR3)
-**And** pgTAP tests prove, using the capability matrix, that a Patient reads only `shared` notes of their own episode, never `staff_only` ones, never another patient's, and cannot write a note (FR-5, FR-31, AR18)
+**Then** a `notes` table exists, owned by the `care` module, with `clinic_id`, the episode, a kind (finding or note), the text, the author, the time, `visibility` of `shared` or `staff_only`, a version and an edit history, with row-level security (AR3, AR8, AR10)
+**And** pgTAP tests, generated from the capability matrix, prove that only a Doctor writes, an Admin reads all notes, a Coordinator reads only `shared` notes, a Patient reads only `shared` notes of their own open episode, and nobody reads another clinic's notes (FR-31, FR-3, FR-5, FR-4)
 
-**Given** the Care tab on a patient record
+**Given** the Care tab
 **When** a Doctor adds a finding or note
-**Then** the visibility toggle defaults to Staff-only, the current choice is stated in words ("Staff-only. The patient cannot see this." or "Shared with patient"), and a Staff-only note carries the lock marker on the item itself (FR-31, UX-DR8)
+**Then** the visibility toggle defaults to Staff-only and states the choice in words ("Staff-only. The patient cannot see this." or "Shared with patient"), and a Staff-only note shows the lock marker on the item itself (FR-31, UX-DR8)
+
+**Given** a saved note
+**When** the Doctor edits it or changes its visibility
+**Then** the previous text and visibility are kept in its history, a change from Staff-only to Shared or back asks for confirmation naming the note, and a conflicting edit is refused with `conflict` (FR-31, AR7, UX-DR26)
 
 **Given** a Coordinator
 **When** they open the Care tab
-**Then** they read Shared notes only, cannot see Staff-only ones, and the add-note control is not shown (FR-3, FR-31)
-**And** a direct write of a note by a Coordinator is refused by policy (FR-3, AR10)
+**Then** they see only Shared notes and no add or edit control, and a direct write is refused by policy (FR-3, FR-31)
 
-**Given** an Admin
-**When** they open the Care tab
-**Then** they read Shared notes only `[ASSUMPTION: least privilege until the owner confirms Admin access to Staff-only notes]` (FR-31, AR10)
-
-**Given** a shared note
-**When** it is saved
-**Then** the patient is notified "Your doctor added a note." through `app.emit_event` with no note text in the email (FR-31, AR12)
-
-### Story 5.2: Prescribe and change medicines
+### Story 5.2: Prescribe, change and stop medicines
 
 As a doctor,
-I want to record the medicines I prescribe and change a dose without losing the history,
+I want to record the medicines I prescribe, change a dose and stop a medicine without losing the history,
 So that the patient sees the current course and the clinic keeps the record.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `medicines` table exists, owned by the `care` module, with `clinic_id`, the episode, name, dose, schedule, start date, duration in days, end date, prescriber and status, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Doctor writes medicines, a Coordinator and Admin read them, and a Patient reads only their own episode's medicines (FR-32, FR-5)
+**Then** a `medicines` table exists, owned by the `care` module, with `clinic_id`, the episode, a lineage id shared by every version of the same medicine, name, dose, a structured schedule of daily slots (morning, midday, evening, night, each with an optional time), start date, duration in days, end date, prescriber, status (current, changed, stopped) and a version, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** only a Doctor writes, a Coordinator and Admin read, and a Patient reads only their own open episode's medicines (FR-32, FR-5, AR10)
 
 **Given** the Care tab
 **When** a Doctor adds a medicine
-**Then** name, dose, schedule, start date and duration are required, the end date is calculated, and each missing field has a specific message (FR-32)
+**Then** name, dose, at least one slot, start date and duration are required with specific messages, and the end date is calculated in the clinic's zone (FR-32)
 
 **Given** a current medicine
 **When** the Doctor changes its dose or schedule
-**Then** the existing row is ended on that day and a new row is created, so the earlier dose stays in history (FR-32, FR-39)
-**And** the patient is notified "Your medicines were updated." with no medicine names in the email (AR12)
+**Then** `change_medicine(medicine, expected_version, new values)` ends the current row and creates the next version in one transaction, keeping the lineage id, so the earlier dose stays in history; a change on the start day replaces the row while still keeping it in history; and an older expected version is refused with `conflict` (FR-32, FR-39, AR14, AR7)
+
+**Given** a current medicine
+**When** the Doctor stops it
+**Then** `stop_medicine(medicine, expected_version)` sets status stopped and the end date to today, and it leaves the current course (FR-32)
 
 **Given** a medicine whose duration has passed
 **When** the lists are shown
 **Then** it leaves the current course and appears under earlier medicines (FR-32)
 
-**Given** a Coordinator
-**When** they attempt to add or change a medicine
-**Then** the control is not shown and a direct write is refused by policy (FR-3, FR-32)
-
 ### Story 5.3: Build a Day Plan and the Plans screen
 
 As a coordinator,
-I want to build a day's plan of treatments, meals, medicines and the stay for a patient,
+I want to build a day's plan of treatments and meals for a patient, with their medicines included automatically,
 So that the patient will know what happens tomorrow.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** `day_plans` and `plan_items` tables exist, owned by the `care` module, with `clinic_id`, one plan per episode per date (unique), a status of draft or published, and items of kind therapy, meal, medicine, review or other with a start time, title, detail and therapist name, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient can never read a draft plan, and reads a published plan of their own episode only (FR-5, FR-33, AR10)
+**Then** `day_plans` and `plan_items` tables exist, owned by the `care` module, with `clinic_id`, one plan per episode per date, and for each plan a published snapshot and a draft revision with a version, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** item kinds are therapy, meal, review and other; medicine lines are not typed by Staff but shown read-only from the patient's current `medicines` for that date, so a plan can never show a medicine the Doctor did not prescribe (FR-33, FR-3)
+**And** a Patient can never read a draft revision and reads only the published snapshot of their own open episode (FR-5, AR10)
 
 **Given** the Care tab
 **When** Staff choose a date and add items
-**Then** items group under Morning, Midday and Evening, can be edited, reordered and deleted, and the plan shows a Draft badge with the date it was saved (FR-33, UX-DR16)
-**And** the stay for that date is shown as a read-only line from the Accommodation section (FR-33, FR-27)
+**Then** items group under Morning, Midday and Evening and can be edited, reordered and deleted in the draft, which shows a Draft badge with the time saved, and the current stay for that date is shown read-only (FR-33, UX-DR16, FR-27)
 
-**Given** the Plans screen in the clinic area
-**When** a Coordinator opens it
-**Then** it lists patients currently in the Care phase with tomorrow's plan status (Not started, Draft or Published), and tapping one opens that plan (FR-33, UX-DR13)
+**Given** two staff edit the same draft
+**When** the second saves from an older version
+**Then** the save is refused with `conflict` and their changes are kept on screen (AR7)
 
-**Given** the Day Plan builder on a phone and on a laptop
-**When** the same plan is edited on each
-**Then** the data and the actions are the same, and the date strip works by touch and by keyboard (NFR2, UX-DR23)
+**Given** the Plans screen, which this story adds to the Coordinator's navigation
+**When** it opens
+**Then** it lists patients in Care, and patients in Arrival who arrive by tomorrow, with tomorrow's plan status (Not started, Draft, Published), where "tomorrow" is in the clinic's zone (FR-33, UX-DR13)
+**And** Today shows the number of plans for tomorrow not yet published (FR-9)
 
-### Story 5.4: Copy yesterday and publish to the patient
+### Story 5.4: Copy yesterday, publish and unpublish
 
 As a coordinator,
-I want to copy yesterday's plan and publish tomorrow's in one step,
-So that a routine day takes a minute, not twenty.
+I want to copy yesterday's plan, publish tomorrow's in one step and take back a plan published by mistake,
+So that a routine day takes a minute, not twenty, and mistakes can be corrected.
 
 **Acceptance Criteria:**
 
-**Given** a patient with a plan for the previous date
+**Given** a plan exists for the previous date
 **When** Staff choose Copy yesterday on a new date
-**Then** yesterday's items are copied into a Draft for the chosen date with times and details, and the draft can be edited before publishing (FR-33)
-**And** copying onto a date that already has a plan asks for confirmation and names what will be replaced (UX-DR26)
+**Then** the previous day's therapy, meal, review and other items are copied into the draft for the chosen date, and medicine lines come from the current medicines for the new date, never from yesterday's copy (FR-33)
+**And** when no plan exists for the previous date the action is disabled with "No plan for Wed 11 Nov", and copying onto a date with a plan asks for confirmation naming what will be replaced (UX-DR26)
 
-**Given** a Draft plan
-**When** Staff choose Publish to patient
-**Then** a confirmation names the patient and the date, and on confirming the SQL function `publish_day_plan` sets the status to published, records the time and creates the patient notification in one transaction (FR-33, AR14, AR12)
-**And** the badge changes to "Published at 17:42" (UX-DR16)
+**Given** a draft
+**When** Staff choose Publish to patient and confirm the patient name and date
+**Then** `publish_day_plan(plan, expected_version)` copies the draft into the published snapshot, records the time and raises the patient notification in one transaction, and the badge reads "Published at 17:42" (FR-33, AR14, UX-DR16)
+**And** an empty plan cannot be published, and a date in the past asks for confirmation (FR-33)
 
-**Given** the Publish action is submitted twice
+**Given** a published plan
+**When** Staff edit it
+**Then** the edits go to the draft revision and the patient keeps seeing the published snapshot until it is published again, when one notification "Your plan for Thursday 12 November was updated." is sent (FR-33, AR10)
+
+**Given** Publish is submitted twice for the same draft version
 **When** the second request arrives
-**Then** no second notification is created and the screen says "Already published." (FR-33, AR7, NFR7)
+**Then** nothing new happens and the screen says "Already published."; a republish after real edits is not blocked (FR-33, AR7, NFR7)
 
-**Given** a published plan that Staff edit and publish again
-**When** it is published
-**Then** the patient sees the new version and one notification "Your plan for Thursday 12 November was updated." is sent (FR-33)
-
-**Given** a Doctor
-**When** they build or publish a Day Plan
-**Then** they can, and a Patient role cannot call `publish_day_plan` (FR-3, AR17)
-**And** a pgTAP test covers the function as an exposed object (AR18)
+**Given** a plan published by mistake
+**When** Staff choose Unpublish and confirm naming the patient and date
+**Then** the patient no longer sees it and is notified "Your plan for Thursday was withdrawn. Your coordinator will publish a new one." (FR-33)
+**And** a Patient cannot call `publish_day_plan`, proven by pgTAP (FR-3, AR17)
 
 ### Story 5.5: Record treatments given
 
@@ -1395,81 +1497,79 @@ So that the record shows what happened as well as what was planned.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `treatments_given` table exists, owned by the `care` module, with `clinic_id`, the episode, the date, an optional link to the planned item, treatment, therapist name, duration in minutes and notes, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**Then** a `treatments_given` table exists, owned by the `care` module, with `clinic_id`, the episode, the date, an optional link to the planned item, treatment, therapist name, duration in minutes and notes, with row-level security making the whole table staff-only, proven by pgTAP that a Patient reads no row (AR3, AR8, AR18, FR-5)
 
 **Given** a published Day Plan
-**When** Staff open it after the day
-**Then** each planned therapy offers "Record as given", prefilled and editable, and a treatment not in the plan can be added (FR-34)
-**And** a treatment given can differ from the one planned, and both are kept and shown side by side (FR-34)
+**When** Staff open it on or after the day
+**Then** each planned therapy offers "Record as given", prefilled and editable, an unplanned treatment can be added, and planned and given are shown side by side (FR-34)
+**And** "Record as given" submitted twice creates one record, through an idempotency key (AR7)
 
 **Given** a record
-**When** it is saved
-**Then** it stores the treatment, therapist name, duration and notes for that date (FR-34)
-**And** a duration of zero or negative is refused with "Enter how many minutes the treatment took." (FR-34)
+**When** it is saved or corrected
+**Then** duration must be more than zero ("Enter how many minutes the treatment took."), and a correction keeps the earlier values in history (FR-34)
 
-**Given** a Patient
-**When** they read their record
-**Then** they cannot read treatments-given notes, because the patient's day view shows the plan only, proven by pgTAP (FR-5, FR-34)
-
-### Story 5.6: The patient's Plan tab and day view
+### Story 5.6: The patient's Plan tab and "From your doctor"
 
 As a patient,
-I want to see my schedule, meals and current medicines for the day,
-So that I know what to expect without asking anyone.
+I want to see my schedule, meals and current medicines for the day, and what my doctor has shared with me,
+So that I know what to expect and what my doctor told me without asking anyone.
 
 **Acceptance Criteria:**
 
-**Given** a published Day Plan for the patient's episode
+**Given** a published plan for the patient's open episode
 **When** the patient opens Plan
-**Then** the day view shows the date, then the schedule grouped Morning, Midday and Evening, the meals, and the current medicines, at 18px with exact times in the patient's local time and the Pune time in brackets (FR-35, UX-DR2, UX-DR20)
-**And** a date switcher moves between days that have a published plan (FR-35)
+**Then** the day view shows the date, the schedule grouped Morning, Midday and Evening, the meals and the current medicines by slot, at 18px, with times in the clinic's local time labelled with the city (FR-35, UX-DR2, UX-DR20)
+**And** a date switcher moves between days that have a published plan
 
 **Given** no published plan for a date
 **When** the patient opens it
-**Then** the screen says "Your plan for this day has not been published yet. Your coordinator will publish it." and shows no draft information (FR-35, UX-DR21)
+**Then** the screen says "Your plan for this day has not been published yet. Your coordinator will publish it." and shows nothing from a draft (FR-35, UX-DR21)
 
 **Given** the medicines section
 **When** it is shown
-**Then** it lists the current course only, each with name, dose and schedule, and a "Show earlier medicines" button reveals the history (FR-32, FR-35)
-**And** the footer shows the clinic phone and the emergency line, and nothing on the screen explains what a medicine or a score means medically (UX-DR22, BR-06)
+**Then** it lists the current course by slot, and "Show earlier medicines" reveals changed and stopped ones with their dates (FR-32, FR-35)
 
-**Given** two patients
-**When** each opens Plan
-**Then** each sees only their own plan, proven by an end-to-end test with Patient A and Patient B (FR-5, AR18)
+**Given** the "From your doctor" section below the day view
+**When** the Doctor has shared notes or changed a medicine
+**Then** it lists shared notes and medicine changes newest first, with the date and the doctor's name, and never a Staff-only note; Epic 8 adds shared assessment outcomes to the same section (FR-31, FR-5)
+**And** a trigger notifies the patient "Your doctor shared a note with you." when a note becomes Shared, with no note text in the notification or email (FR-31, AR12)
+
+**Given** the footer
+**When** Plan is shown
+**Then** it shows the clinic phone and the emergency line, nothing explains what a medicine or answer means medically, the automated accessibility check passes, and an end-to-end test proves Patient A never sees Patient B's plan or notes (UX-DR22, BR-06, FR-5)
 
 ### Story 5.7: Tick medicines as taken
 
 As a patient,
-I want to mark each medicine as taken,
+I want to mark each dose as taken,
 So that the clinic knows I followed my plan and I do not lose track.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `medicine_intakes` table exists, owned by the `care` module, with `clinic_id`, the medicine, the date, the slot, the time taken and the source (patient or staff), with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient can write intakes only for their own medicines and cannot read another patient's (FR-5, FR-35)
+**Then** a `medicine_intakes` table exists, owned by the `care` module, with `clinic_id`, the medicine lineage, the local date, the slot, the time taken and the source (patient or staff), unique on lineage, date and slot, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** patients record and undo intakes only through `record_intake` and `undo_intake`, which allow only today's date in the clinic's zone, current medicines of their own open episode and, for undo, their own entry within 10 minutes (FR-35, FR-5, AR14)
 
 **Given** the day view
-**When** the patient taps "Taken" on a medicine
-**Then** the row reads "Taken at 08:10" in words, not only a tick, and the time and source are stored (FR-35, UX-DR17)
-**And** the patient can undo within 10 minutes and not after (UX-DR17)
+**When** the patient taps "Taken" on a dose
+**Then** the row reads "Taken at 08:10" in words, and a change of dose later the same day keeps today's ticks because intakes follow the lineage (FR-35, UX-DR17)
 
-**Given** Staff open the patient's record
-**When** they view the day
-**Then** they see which medicines were taken and can record one on the patient's behalf, with source staff (FR-35)
+**Given** Staff view the patient's day
+**When** they record a dose on the patient's behalf
+**Then** it is stored with source staff, and the patient cannot undo a staff entry (FR-35)
 
-**Given** the same medicine tapped twice quickly
+**Given** the same dose tapped twice quickly
 **When** both requests arrive
 **Then** one intake exists (FR-35, NFR7)
 
 **Given** the demo journey for UJ-2
 **When** the end-to-end test runs
-**Then** the coordinator copies yesterday's plan and publishes it, the patient sees it on a phone-sized browser and taps Taken, and the coordinator sees the intake, with the isolation suite passing for every table added in this epic (UJ-2, FR-6)
+**Then** the coordinator copies yesterday's plan and publishes it, the patient sees it on a phone-sized browser and taps Taken, the Doctor shares a note and the patient sees it under "From your doctor", and the isolation suite passes for every object added in this epic (UJ-2, FR-6)
 
 ## Epic 6: Check-in and doctor review
 
-The patient answers a daily check-in. The Doctor reviews check-ins flagged first, adds notes, changes medicines and marks them reviewed, and can edit the check-in questions and flag rules. Covers FR-36, FR-37, FR-38, FR-39 and the Doctor part of FR-8. `check_ins` is one table owned by `care`, with a unique key of episode, kind, template and local date; every flag is written only by the flag-evaluation function; review is one SQL function (AR13, AR14). The app records and alerts. It never interprets answers medically, never tells a patient they were flagged, and applies only rules the Doctor sets (BR-06).
+The patient answers a daily check-in. The Doctor reviews check-ins flagged first, adds notes, changes medicines and marks them reviewed, and can edit the check-in questions and flag rules. Covers FR-36, FR-37, FR-38, FR-39 and the Doctor part of FR-8. `check_ins` is one table owned by `care`, created only by the scheduler and answered only through `submit_check_in`; flags live in a separate staff-only table written only by the evaluation function (AR13, AR14). The app records and alerts. It never interprets answers medically, never tells a patient they were flagged, and applies only rules the Doctor sets (BR-06).
 
 ### Story 6.1: The patient's daily check-in
 
@@ -1481,29 +1581,31 @@ So that my doctor knows how my treatment is going.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `check_ins` table exists, owned by the `care` module, with `clinic_id`, the episode, a kind (daily or follow_up), the questions version it was answered against, the Patient's local date, answers, flags, who reviewed and when, and a unique key on episode, kind, questions version and local date, with row-level security (AR13, AR3, AR8)
-**And** a SQL function `create_due_check_in` creates one check-in idempotently and is the only way a check-in row is created (AR13, AR14, NFR7)
+**Then** a `check_ins` table exists, owned by the `care` module, with `clinic_id`, the episode, a template (daily or follow_up), the questions version it uses, the local date, scheduled and closing times, answers, status (open, answered, not answered, withdrawn) and review fields, with a unique key on episode, template and local date, so changing the questions never allows a second check-in for the same day (AR13)
+**And** rows are created only by `create_due_check_in`, a scheduled function with no client parameters that `authenticated` cannot call (AR13, AR17)
 
-**Given** a patient in the Care phase
-**When** they open Check-in on or after 06:00 in their local time on a day with no check-in yet `[ASSUMPTION: daily window opens at 06:00 local]`
-**Then** that day's check-in is created once and shown as "Question 1 of 5", one question per screen, with large answer buttons, a progress word and a Back button at every step (FR-36, UX-DR18)
-**And** opening the tab twice or on two devices creates one check-in (FR-36, NFR7)
+**Given** an episode in the Care phase
+**When** the hourly job runs after 06:00 in the clinic's zone, where the patient is staying
+**Then** one daily check-in for that date is created, and none is created for an episode not in Care `[ASSUMPTION: window opens at 06:00 clinic time and closes at the end of that day]` (FR-36, FR-10)
 
-**Given** the five sample questions
-**When** the patient answers
-**Then** the medicines question takes Yes, Partly or No, the score questions take 1 to 5 with words at each end ("Poor" to "Very good"), and the free-text answer is limited to 1,000 characters with a counter `[ASSUMPTION: these answer formats and limits]` (FR-36)
-**And** continuing without an answer says "Choose an answer to continue." (FR-36, UX-DR21)
+**Given** an open check-in
+**When** the patient opens Check-in
+**Then** it runs one question per screen with "Question N of M", where M is the number of questions in its version, large answer buttons and Back at every step; answers stay on the device until sent, so reopening resumes where the patient stopped (FR-36, UX-DR18)
+**And** the medicines question takes Yes, Partly or No, score questions take 1 to 5 with words at each end, free text is limited to 1,000 characters with a counter, and continuing without an answer says "Choose an answer to continue." `[ASSUMPTION: answer formats and limits]` (FR-36, UX-DR21)
 
-**Given** the last question
-**When** the patient reaches the review screen and taps Send
-**Then** the answers are saved once, and submitting twice does not create two check-ins (FR-36, AR7)
-**And** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and the line "For urgent help, call the clinic. In an emergency, call your local emergency number." (FR-36, UX-DR22)
+**Given** the review screen
+**When** the patient taps Send
+**Then** `submit_check_in(check_in, answers, idempotency_key)` takes the episode from the caller, validates the answers against the check-in's own questions version, records them once and refuses a second submission or a check-in that is closed; patients have no direct insert or update on `check_ins`, proven by pgTAP (FR-36, AR7, AR14)
+**And** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and "For urgent help, call the clinic. In an emergency, call your local emergency number." (UX-DR22)
 
-**Given** an already submitted check-in, another patient's, or a staff user
-**When** a write is attempted
-**Then** it is refused by policy, so a submitted check-in cannot be edited and Patient A cannot read or write Patient B's, proven by pgTAP (FR-5, AR18)
-**And** a five-question check-in can be completed and sent in under a minute, measured in the end-to-end run (BRD NFR-03)
-**And** when no check-in is due the tab says "Your next check-in is Friday 13 November at 08:00." in the patient's local time (UX-DR21, UX-DR20)
+**Given** Send while offline or a failed request
+**When** it happens
+**Then** the answers are kept and the screen says "Not sent yet. Try again when you are connected.", and retrying with the same key cannot record it twice (UX-DR21, NFR7)
+
+**Given** the end of the local day
+**When** a check-in was never answered
+**Then** it becomes "not answered" and the Review Queue shows it to the Doctor as "Not answered" (FR-37)
+**And** when no check-in is open the tab says "Your next check-in opens tomorrow at 06:00 Pune time." with the time and city from settings (UX-DR21, UX-DR20)
 
 ### Story 6.2: Flag evaluation with sample rules
 
@@ -1513,26 +1615,25 @@ So that the clinic's judgement, not the software's, decides what needs attention
 
 **Acceptance Criteria:**
 
-**Given** the flag rules stored in the clinic's settings
-**When** a check-in is submitted
-**Then** one SQL function evaluates the answers against the rules, writes the flag and the reasons in plain words, and does so in the same transaction as the submission (FR-38, AR9, AR13)
-**And** the function contains no clinical threshold of its own, so with an empty rule set no check-in is ever flagged (FR-38, BR-06)
+**Given** the migrations
+**When** this story is applied
+**Then** a staff-only table `check_in_flags` exists, owned by the `care` module, holding for each check-in whether it is flagged, the reasons in plain words and the flag-rules version used, with row-level security so a Patient reads no row, proven by pgTAP (AR10, AR13, FR-5)
+
+**Given** a submitted check-in
+**When** `submit_check_in` records it
+**Then** the evaluation function runs in the same transaction against the current flag rules and writes `check_in_flags`; a rule that refers to a question the check-in does not have is skipped and noted as a reason, and an error in evaluation never blocks the patient's submission (FR-38, AR13)
+**And** the function holds no clinical threshold of its own, so with an empty rule set nothing is flagged (FR-38, BR-06)
 
 **Given** the sample rule set from the seed
-**When** a check-in has medicines answered "No" or any score of 2 or less
-**Then** it is flagged with the reason "Medicines: No" or "Sleep: 2 of 5", and the set is labelled "Sample rules. Not clinical advice." wherever it is shown (FR-38, UX-DR22) `[ASSUMPTION: sample rules exist only so the demo can show a queue; the real rules come from the Doctor]`
+**When** a check-in has medicines "No" or any score of 2 or less
+**Then** it is flagged with reasons such as "Medicines: No" or "Sleep: 2 of 5", labelled "Sample rules. Not clinical advice." wherever shown to Staff `[ASSUMPTION: sample rules only for the demo; the real rules come from the Doctor]` (FR-38, UX-DR22)
 
-**Given** a change to the rules in the settings data
+**Given** a change to the rules
 **When** the next check-in is submitted
-**Then** its evaluation follows the new rules with no code change (FR-38)
-
-**Given** a flagged check-in
-**When** the patient views their own check-in or any screen
-**Then** no flag, reason or word implying concern is shown to the patient (FR-38, UX-DR22)
-**And** pgTAP tests prove a Patient cannot read the flags column and the evaluation function is covered as an exposed object (AR18)
+**Then** it follows the new rules with no code change, and earlier check-ins keep the flags and rules version they were evaluated with (FR-38)
 
 **Given** unit tests
-**When** they run for each answer type and for an empty rule set, a rule with a missing question and a score at the boundary
+**When** they run for each answer type, an empty rule set, a rule naming a missing question and a score on the boundary
 **Then** every case passes (FR-38)
 
 ### Story 6.3: The Doctor's Review Queue
@@ -1543,26 +1644,22 @@ So that I look at the patients who need me before the rest.
 
 **Acceptance Criteria:**
 
-**Given** submitted check-ins
-**When** a Doctor opens Review on a phone or the Review Queue on a laptop
-**Then** the list shows flagged check-ins first, then by time, each with the patient name, the check-in kind and time, a "Needs review" badge with the reason in words and a "Sample rule" badge when the sample rules raised it (FR-37, UX-DR19)
-**And** a Doctor sees only check-ins of their own clinic (FR-4, FR-37)
-
-**Given** an empty queue
-**When** it loads
-**Then** it says "Nothing to review right now." and while loading shows a skeleton with the word "Loading" (UX-DR21)
+**Given** answered and not-answered check-ins
+**When** a Doctor opens Review, which this story adds to the Doctor's navigation
+**Then** the list shows flagged check-ins first, then the rest oldest first, then "Not answered" ones, each with the patient name, the check-in type and time, a "Needs review" badge with the reasons in words, and a "Sample rule" badge when the sample rules raised it (FR-37, UX-DR19)
+**And** a Doctor sees only check-ins of their own clinic, and an empty queue says "Nothing to review right now." (FR-4, UX-DR21)
 
 **Given** a check-in is flagged on submission
 **When** it is saved
-**Then** an alert is raised for the Doctors through `app.emit_event` with a `dedupe_key`, and it shows in the needs-attention block on Today with the patient name and time (FR-9, FR-37, AR12)
+**Then** a trigger raises an alert for the Doctors through `app.emit_event`, which shows on Today, the Patients list shows a "Needs review" badge for that patient, and Today shows the number of check-ins waiting for review (FR-9, FR-37, AR12, UX-DR13)
 
 **Given** a Coordinator or Admin
 **When** they open the queue
-**Then** they can read it but not review, and a Patient cannot see it (FR-3, FR-5)
+**Then** they can read it but not review it; for a Coordinator the pane shows Shared notes only, proven by an end-to-end test; a Patient cannot see the queue (FR-3, FR-5, FR-31)
 
 **Given** a laptop at 1024px or wider
 **When** the queue is shown
-**Then** the list sits at 360px beside the review pane, and on a phone each row opens the pane full screen, with the same actions on both (NFR2, UX-DR10, UX-DR24)
+**Then** the list sits at 360px beside the review pane, and on a phone each row opens the pane full screen (NFR2, UX-DR10, UX-DR24)
 
 ### Story 6.4: Review a check-in
 
@@ -1574,59 +1671,46 @@ So that I do not have to leave the queue to act.
 
 **Given** a check-in in the queue
 **When** the Doctor opens it
-**Then** the review pane shows the answers in words, the patient's recent notes and current medicines, and the actions Add note, Change medicine and Mark reviewed (FR-39, UX-DR19)
+**Then** the pane shows the answers in words, the flag reasons, the patient's recent notes and current medicines, and the actions Add note, Change medicine and Mark reviewed (FR-39, UX-DR19)
 
-**Given** Add note
-**When** the Doctor writes it
-**Then** the visibility toggle defaults to Staff-only with the words "Staff-only. The patient cannot see this.", and choosing "Shared with patient" is stated in words (FR-31, FR-39, UX-DR8)
-
-**Given** Change medicine
-**When** the Doctor changes a dose
-**Then** it uses the medicine-change function from Story 5.2 so the earlier dose stays in history (FR-32, FR-39)
+**Given** Add note or Change medicine
+**When** the Doctor uses it
+**Then** each saves at once through its own function (the note as in Story 5.1, defaulting to Staff-only; the medicine through `change_medicine` from Story 5.2, which refuses a change based on an out-of-date version), and the pane refreshes (FR-31, FR-32, FR-39)
 
 **Given** Mark reviewed
 **When** the Doctor confirms
-**Then** the SQL function `review_check_in` records who and when, saves any note and medicine change and resolves the related alert, all in one transaction, so a failure part-way leaves nothing half-done (FR-39, AR14)
-**And** the row leaves the queue and the Today count drops (FR-39, FR-9)
+**Then** `review_check_in(check_in)` locks the check-in, records who and when, and resolves the related alert in one transaction; the row leaves the queue and the count drops (FR-39, AR14)
 
-**Given** Mark reviewed submitted twice
-**When** the second request arrives
-**Then** it does nothing new and the screen says "Already reviewed." (FR-39, AR7, NFR7)
-
-**Given** the patient's next visit to the app
-**When** a shared note or changed medicine exists
-**Then** the patient sees the shared note and the current medicine, and never a Staff-only note (FR-31, FR-32, FR-5)
-**And** a Coordinator calling `review_check_in` is refused, proven by pgTAP (FR-3, AR17, AR18)
+**Given** two Doctors review the same check-in
+**When** the second confirms
+**Then** they see "Already reviewed by <name> at 09:12." and nothing changes; repeating Mark reviewed does nothing new (FR-39, AR7, NFR7)
+**And** a Coordinator calling `review_check_in` is refused, proven by pgTAP (FR-3, AR17)
 
 ### Story 6.5: The Doctor edits check-in questions and flag rules
 
 As a doctor,
-I want to set the check-in questions and the flag rules for my clinic,
+I want to set the daily and follow-up check-in questions and the flag rules for my clinic,
 So that the check-in asks what I care about and flags what I decide.
 
 **Acceptance Criteria:**
 
 **Given** a Doctor
 **When** they open More, Settings, Clinical rules
-**Then** they can edit the questions (text, answer type, order, add and remove within limits) and the flag rules (for example "medicines is No", "any score is 2 or less") through a plain form, each validated by its schema (FR-8, UX-DR28, AR9)
-**And** the page carries the "Sample rules. Not clinical advice." badge while the sample set is in use (UX-DR22)
+**Then** they can edit the daily questions, the follow-up questions and the flag rules through a plain form, within limits of 1 to 10 questions per set, question text up to 200 characters and up to 20 rules, each validated `[ASSUMPTION: limits]` (FR-8, UX-DR28, AR9)
+**And** the page shows "Sample rules. Not clinical advice." while the sample set is in use
 
-**Given** the Doctor saves their own rule set
+**Given** the Doctor saves their own set
 **When** it is stored
-**Then** the badge changes to "Set by the clinic's doctor on 12 November" and the new rules apply to the next check-in only, without changing any check-in already answered (FR-8, FR-38)
-**And** each check-in keeps the version of the questions it was answered against, so old answers stay readable (FR-36, AR13)
+**Then** the badge changes to "Set by the clinic's doctor on 12 November", the new version applies to check-ins created afterwards, and an open or answered check-in keeps its own version (FR-8, FR-38, FR-36)
 
-**Given** an invalid set, for example no questions or a rule that names a question that does not exist
+**Given** an invalid set or a save based on an older version
 **When** the Doctor saves
-**Then** it is refused with a message that says what to fix and the input is kept (FR-8, UX-DR21)
+**Then** an invalid set (no questions, a rule naming a missing question) is refused with what to fix, a conflicting save is refused with `conflict`, and the input is kept (FR-8, AR7, UX-DR21)
 
-**Given** an Admin or Coordinator
-**When** they request the Clinical rules screen or call the save
-**Then** the screen is hidden from their navigation and the write is refused by policy, as Story 1.4's tests assert for this section (FR-8, FR-3, AR9)
-
-**Given** a laptop and a phone
-**When** the Doctor edits the same set on each
-**Then** the data and the actions are the same (NFR2)
+**Given** a Coordinator
+**When** they open Clinical rules
+**Then** they see the questions and rules read-only, with no save control, and a direct write is refused by policy (FR-8, FR-3)
+**And** an Admin does not see the screen and cannot write, per the PRD role table (FR-8, AR10)
 
 ### Story 6.6: Walk the check-in and review journey
 
@@ -1638,55 +1722,77 @@ So that the whole care loop is proven working.
 
 **Given** a clean demo database
 **When** the end-to-end test for UJ-3 runs
-**Then** a patient in Care submits a check-in answering "No" to medicines, the Doctor's Today shows the alert, the Review Queue lists it first with its reason, the Doctor adds a shared note, changes a medicine and marks it reviewed, and the patient then sees the shared note and the changed medicine (UJ-3, FR-36 to FR-39)
+**Then** the hourly job is run on demand and opens a check-in, a patient in Care answers "No" to medicines, the Doctor's Today shows the alert, the Review Queue lists it first with its reason, the Doctor adds a Shared note, changes a medicine and marks it reviewed, and the patient sees the note and the changed medicine under "From your doctor" (UJ-3, FR-36 to FR-39)
 **And** the same run confirms the patient never sees a flag and a Coordinator cannot review (BR-06, FR-3)
 
 **Given** the run
 **When** it completes
-**Then** the isolation suite passes for every table added in Epics 5 and 6, including Patient A against Patient B and Clinic X against Clinic Y, and the coverage check finds no untested object (FR-4, FR-5, FR-6, AR18)
-**And** a written demo script for the care loop is saved in `docs/demo/care.md` for Ravi to follow by hand
+**Then** the isolation suite passes for every object added in Epics 5 and 6 and the automated accessibility check passes on Plan and Check-in (FR-4, FR-5, FR-6, NFR8)
+**And** a demo script is saved in `docs/demo/care.md`
 
 **Given** the demo script
-**When** Ravi follows it on a phone and a laptop
-**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
+**When** Ravi follows it on a phone and a laptop, timing himself
+**Then** every step works, a five-question check-in takes under a minute by hand, and any step that does not work is recorded as a defect before the next epic starts (BRD NFR-03, NFR2)
 
 ## Epic 7: Documents
 
-Staff and patients add and view documents safely, with passport scans and medical records stored privately, shared or staff-only, and phone photos accepted. Covers FR-17 and FR-18. The `documents` module owns `documents`; documents attach only to a saved patient, never to an onboarding draft (AR8, AR15). Stories use the findings recorded in `docs/spikes/` by Story 1.11 for the HEIC approach and the oldest phone tested.
+Staff and patients add and view documents safely, with passport scans, medical records and the patient's photo stored privately, shared or staff-only, several files at once, and phone photos accepted. Covers FR-17 and FR-18, and the optional photo of FR-13. The `documents` module owns `documents`; documents attach only to a saved patient, never to an onboarding draft (AR8, AR15). Uploads go through the user's own session under storage policies, never the service key. Stories use the findings recorded in `docs/spikes/` by Story 1.12 for the photo conversion approach and the oldest phone tested.
 
-### Story 7.1: Staff upload a document to a patient record
+### Story 7.1: Document storage and access rules
 
-As a coordinator or doctor,
-I want to upload a document to a patient's record and choose whether the patient can see it,
-So that the patient's files are in one place and the private ones stay private.
+As a builder,
+I want the document table and private storage set up so that a file can only be stored and read by the people allowed,
+So that passport scans and medical records are protected before any screen uses them.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `documents` table exists, owned by the `documents` module, with `clinic_id`, the patient, an optional episode, kind (passport, medical record, letter, prescription, summary or other), storage path, file type, size, who uploaded, `visibility` of `shared` or `staff_only`, and `deleted_at`, with row-level security (AR3, AR8, AR10)
-**And** a private storage bucket exists with a bucket-level size limit of 15 MB, allowed types PDF, JPG and PNG, and overwrite disallowed (AR15, FR-17)
-**And** pgTAP tests prove the table and the bucket each as Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y, and the coverage check passes (FR-4, FR-5, AR18)
+**Then** a `documents` table exists, owned by the `documents` module, with `clinic_id`, the patient, an optional episode, kind (passport, medical record, letter, prescription, summary, photo or other), storage path, file type, size, who uploaded, a status (pending or stored), `visibility` of `shared` or `staff_only`, `deleted_at` and who removed it, with row-level security (AR3, AR8, AR10)
+**And** a private bucket exists with a 15 MB size limit, allowed types PDF, JPG and PNG, and overwrite disallowed (AR15, FR-17)
+
+**Given** an upload
+**When** it starts
+**Then** a pending `documents` row is created first through `start_upload(patient, kind, visibility)`, which fixes the id, the path `<clinic_id>/<patient_id>/<episode_id or general>/<document_id>.<ext>` and the clinic from the caller's token; the storage insert policy allows a file only at the path of a pending row the caller created (AR15)
+
+**Given** the file has arrived
+**When** `finish_upload(document)` runs on the server
+**Then** the file's real content type is checked, a mismatch deletes the file and the row and returns `upload_rejected`, and a match marks the row stored (AR15)
+**And** a daily job deletes pending rows and their files older than 30 minutes, so no orphan file remains
+
+**Given** the isolation suite
+**When** it runs for the table and the bucket
+**Then** it proves Patient A cannot read or write Patient B's rows or files, Clinic X cannot reach Clinic Y's, a Patient cannot read a `staff_only` document, and a guessed path grants nothing (FR-4, FR-5, AR18)
+
+### Story 7.2: Staff upload documents
+
+As a coordinator or doctor,
+I want to upload one or several documents to a patient's record and choose whether the patient can see them,
+So that the patient's files are in one place and the private ones stay private.
+
+**Acceptance Criteria:**
 
 **Given** a saved patient's Documents tab
-**When** Staff choose Add document
-**Then** a file chooser shows the limits first ("PDF, JPG, PNG or HEIC, up to 15 MB"), a kind can be chosen, and the visibility toggle defaults to Staff-only with the words "Staff-only. The patient cannot see this." (FR-17, UX-DR8, UX-DR15)
-**And** the file goes straight to storage with a short-lived signed upload link and the `documents` row is created only after the upload succeeds (AR15)
+**When** Staff choose Add documents
+**Then** a chooser shows the limits first ("PDF, JPG, PNG or HEIC, up to 15 MB each") and accepts several files at once, each with its own kind and a visibility toggle defaulting to Staff-only with the words "Staff-only. The patient cannot see this." (FR-17, BRD FR-ONB-04, UX-DR8, UX-DR15)
+
+**Given** several files
+**When** they upload
+**Then** each shows its own progress and result in words, a failure of one leaves the others stored, and a file that fails can be retried on its own (FR-17, UX-DR15)
 
 **Given** a file over 15 MB or of another type
-**When** it is chosen or sent
-**Then** it is refused with "This file is larger than 15 MB. Choose a smaller file or compress it." or "Upload a PDF, JPG, PNG or HEIC file." and the input is kept (FR-17, UX-DR15, UX-DR21)
-
-**Given** a file that passes the browser check
-**When** the server inspects its content type after upload
-**Then** a file whose content does not match its type is deleted and the user sees the upload-rejected message, because browser-only limits can be bypassed (AR15)
+**When** it is chosen or rejected after upload
+**Then** the message is "Upload a PDF, JPG, PNG or HEIC file under 15 MB." and the other files are unaffected (FR-17, UX-DR21)
 
 **Given** repeated uploads in a short time
-**When** the limit is exceeded
-**Then** the upload endpoint answers with the `rate_limited` result and says when to try again (AR21)
-**And** the Documents tab lists each file with name, kind, size, who added it and a Shared or Staff-only badge, with the lock marker and the words on Staff-only ones (FR-18, UX-DR7, UX-DR8)
+**When** the rate limit from Story 3.5 is exceeded
+**Then** the upload answers with `rate_limited` and says when to try again (AR21)
 
-### Story 7.2: Open a document through a short-lived link
+**Given** the Documents tab
+**When** it lists files
+**Then** each shows name, kind, size, who added it and a Shared or Staff-only badge with the lock marker in words on Staff-only ones, and the automated accessibility check passes (FR-18, UX-DR7, UX-DR8)
+
+### Story 7.3: Open a document through a short-lived link
 
 As a coordinator, doctor or patient,
 I want to open a document I am allowed to see,
@@ -1694,29 +1800,23 @@ So that I can read it without the file being open to anyone else.
 
 **Acceptance Criteria:**
 
-**Given** a document the signed-in person is allowed to see
+**Given** a document the signed-in person may see
 **When** they tap its name
-**Then** a download link is created at that moment, it works within about 60 seconds, and after that it stops working (AR15)
-**And** the file is served with `nosniff` and as an attachment, so the browser does not run it (AR15)
+**Then** a download link is created at that moment, works for about 60 seconds and then stops, and the file is served with `nosniff` and as an attachment (AR15)
 
 **Given** a Patient
-**When** they request a `staff_only` document, another patient's document, or a document of another clinic
+**When** they request a `staff_only` document, another patient's, another clinic's or a removed one
 **Then** no link is created and nothing about the file is revealed (FR-5, FR-4, AR15)
 
-**Given** the storage policies
-**When** they are evaluated
-**Then** they join to `documents` to enforce the clinic, the patient and the visibility, and a path prefix alone grants nothing (AR15)
-**And** a pgTAP test proves a user who guesses another patient's file path cannot read it (AR18)
-
-**Given** a user whose role was removed
+**Given** a user whose access was removed
 **When** they use an old token to request a link
 **Then** no link is created, proven by a test (AR5, AR18)
 
 **Given** a link older than 60 seconds
 **When** it is opened
-**Then** it is refused and the user can request a new one from the same screen (AR15, UX-DR21)
+**Then** it is refused, and the user can request a new one from the same screen (AR15, UX-DR21)
 
-### Story 7.3: Upload photos from a phone, including HEIC
+### Story 7.4: Upload photos from a phone, including HEIC
 
 As a coordinator or patient,
 I want to take a photo of a passport or record with my phone and upload it,
@@ -1726,26 +1826,25 @@ So that I do not need a scanner.
 
 **Given** a phone browser
 **When** the user chooses Take a photo or Choose a file
-**Then** the camera or the photo library opens and the chosen image is uploaded (FR-17, UX-DR15)
+**Then** the camera or the photo library opens and the chosen images upload as in Story 7.2 (FR-17, UX-DR15)
 
 **Given** an iPhone photo in HEIC format
 **When** it is chosen
-**Then** the browser converts it to JPEG before upload with the line "Preparing photo…" visible, using the approach recorded in `docs/spikes/` by Story 1.11, and only the JPEG reaches storage (AR15, UX-DR15)
-**And** the same file's size after conversion is checked against 15 MB, with the message "This file is larger than 15 MB. Choose a smaller file or compress it." if it is still too large (FR-17)
+**Then** the browser converts it to JPEG before upload, showing "Preparing photo…", using the approach recorded in `docs/spikes/` by Story 1.12, and only the JPEG is stored (AR15, UX-DR15)
 
-**Given** a conversion that fails or takes too long
-**When** the browser cannot convert the file
+**Given** any photo
+**When** it is prepared for upload
+**Then** its location and device metadata (EXIF, including GPS) is removed in the browser before upload, proven by a test that inspects a stored file (AR15, NFR6)
+
+**Given** a conversion that fails or takes longer than the limit in the findings note
+**When** it happens
 **Then** the user sees "We could not prepare this photo. Try taking it again, or choose a PDF." and nothing is uploaded (UX-DR21)
 
-**Given** the oldest phone recorded in `docs/spikes/`
-**When** the upload is tried on it
-**Then** it completes within the time the findings note states, or the note's recorded fallback is used (AR15)
+**Given** the content security policy from Story 3.5
+**When** this story is applied
+**Then** it is extended only as far as photo conversion and storage uploads need, and a test proves uploads and conversion still work under it (AR21)
 
-**Given** an upload in progress
-**When** the user watches it
-**Then** progress shows in words and a Cancel button stops it and leaves no row and no file (UX-DR15)
-
-### Story 7.4: The patient's Documents tab
+### Story 7.5: The patient's Documents tab
 
 As a patient,
 I want to see the documents my clinic has shared with me and add my own,
@@ -1755,50 +1854,45 @@ So that my records are in one place and the clinic has what it needs.
 
 **Given** a signed-in patient
 **When** they open Documents
-**Then** they see only documents marked Shared for their own record, each with name, kind and date, and never a Staff-only document or another patient's (FR-18, FR-5)
+**Then** they see Shared documents of their own record and every document they uploaded themselves, each with name, kind and date, and never a Staff-only document Staff added or another patient's (FR-18, FR-5)
 **And** with none, the screen says "No documents yet. Your clinic will add documents here. You can add your own." (UX-DR21)
 
-**Given** the patient taps Add a document
-**When** they choose a file or take a photo
-**Then** the upload works as in Stories 7.1 and 7.3 with 56px targets and 18px text, and the document is saved as Shared so the patient can see what they added (FR-17, UX-DR2)
-**And** Staff see the patient's upload in their Documents tab with the label "Added by patient" (FR-17, FR-18)
+**Given** the patient adds documents
+**When** they choose files or take photos
+**Then** the upload works as in Stories 7.2 and 7.4 with 56px targets and 18px text, and Staff see the files labelled "Added by patient" (FR-17, UX-DR2)
 
-**Given** a document a patient added
-**When** the patient removes it
-**Then** a confirmation names the file, and after confirming it is hidden from both and kept for the clinic's retention until the owner decides rules, not erased (UX-DR26, FR-17)
+**Given** a document the patient uploaded
+**When** they remove it and confirm, the confirmation naming the file
+**Then** `remove_own_document(document)` hides it from the patient only, Staff still see it marked "Removed by patient", and the patient has no direct update on `documents`, proven by pgTAP that a patient cannot change visibility, path or kind (FR-17, FR-5, AR14)
 **And** a patient cannot remove a document Staff added (FR-5)
 
-**Given** the patient's Documents on a phone and a laptop
-**When** it is used at 200% zoom and 320px width
-**Then** no label is truncated and the tab works by touch and keyboard (UX-DR23)
-
-### Story 7.5: Manage documents and add them from onboarding
+### Story 7.6: Manage documents, add them after onboarding, and the patient photo
 
 As a coordinator,
-I want to change who can see a document, remove one that was added by mistake, and add documents right after creating a patient,
+I want to change who sees a document, remove one added by mistake, add documents right after creating a patient and set the patient's photo,
 So that the record is correct and complete without extra steps.
 
 **Acceptance Criteria:**
 
-**Given** a document in the Documents tab
+**Given** a document Staff added
 **When** Staff change its visibility
-**Then** the toggle states the new setting in words and the patient's view updates, and a Staff-only to Shared change confirms first by naming the file (FR-18, UX-DR8, UX-DR26)
+**Then** the change is stated in words and the patient's view updates; changing from Staff-only to Shared asks for confirmation naming the file (FR-18, UX-DR8, UX-DR26)
+**And** a document the patient uploaded always stays visible to that patient, whatever its visibility (FR-18)
 
 **Given** a document added by mistake
-**When** Staff press Remove
-**Then** a confirmation names the file, and after confirming the document is hidden from every list and its file link stops working, with the row kept with `deleted_at` set (FR-17, UX-DR15)
-**And** Patient policies exclude removed documents (AR10)
+**When** Staff remove it and confirm naming the file
+**Then** it disappears from every list, its download link stops working, and the row is kept with `deleted_at` and who removed it (FR-17, UX-DR15)
 
 **Given** the onboarding success screen
 **When** a patient has just been created
-**Then** the "Add documents now" card, which Story 3.5 left showing "Documents come next", is now active and opens the new patient's Documents tab ready to add a passport or medical records (UX-DR14, FR-17)
-**And** an onboarding draft that is abandoned holds no files and needs no cleanup, because documents attach only to a saved patient (AR15)
+**Then** the "Add documents now" card from Story 3.6 is active and opens the new patient's Documents tab ready to add a passport, medical records or a photo (UX-DR14, FR-17)
 
-**Given** a returning patient with documents from an earlier episode
-**When** a new episode is started
-**Then** the earlier documents are still in the Documents tab and need no re-upload (FR-11, FR-18)
+**Given** a document of kind photo
+**When** Staff choose "Use as profile photo"
+**Then** it shows on the patient's Overview to Staff, never shared with other patients (FR-13)
+**And** a returning patient's documents from earlier episodes remain in the tab (FR-11, FR-18)
 
-### Story 7.6: Walk the documents journey
+### Story 7.7: Walk the documents journey
 
 As a product owner,
 I want to walk adding a passport photo and sharing a record in one repeatable run,
@@ -1808,21 +1902,21 @@ So that documents are proven safe, not assumed.
 
 **Given** a clean demo database
 **When** the end-to-end test runs
-**Then** a coordinator creates a patient on a phone-sized browser, adds a passport photo from the success card as Staff-only, adds a medical record as Shared, and the patient signs in and sees only the Shared one and can open it, while a link to the Staff-only one is refused (UJ-2, FR-17, FR-18)
-**And** the patient adds their own document and Staff see it labelled "Added by patient"
+**Then** a coordinator creates a patient on a phone-sized browser, uses the success card to add a passport photo as Staff-only and two medical records at once as Shared, and the patient signs in, sees only the two Shared files, opens one, and is refused a link to the Staff-only one (UJ-2, FR-17, FR-18)
+**And** the patient adds their own document, Staff see it labelled "Added by patient", and the stored photo has no location metadata
 
 **Given** the run
 **When** it completes
-**Then** the isolation suite passes for the `documents` table and its bucket, covering Patient A against Patient B, Clinic X against Clinic Y, Staff-only against a Patient, a guessed path and a demoted user's old token (FR-4, FR-5, FR-6, AR18)
-**And** a written demo script for documents is saved in `docs/demo/documents.md` for Ravi to follow by hand
+**Then** the isolation suite passes for the documents table and bucket, including a guessed path and a demoted user's old token, and the automated accessibility check passes on Documents (FR-4, FR-5, FR-6, AR18, NFR8)
+**And** a demo script is saved in `docs/demo/documents.md`
 
 **Given** the demo script
 **When** Ravi follows it with a real iPhone photo and an Android photo
-**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (FR-17, NFR2)
+**Then** every step works, and any step that does not is recorded as a defect before the next epic starts (FR-17, NFR2)
 
 ## Epic 8: Before arrival: enquiry, assessment, planning
 
-Staff log the enquiry and quotations, the Doctor logs the assessment, and staff record the programme and payments, so the patient's history is complete from the first contact. Covers FR-20, FR-21, FR-22, FR-23, FR-24. The `enquiry` module owns `enquiries` and `quotations`, `assessment` owns `assessments`, `planning` owns `programmes` and `payments` (AR8). First contact, quotations and assessment calls stay on WhatsApp, email and phone; the app records the outcome and lineage (BR-01). Enquiries, quotations, the programme and payments are staff-only in the prototype because the PRD gives the patient no view of them; only assessments marked Shared reach the patient.
+Staff log the enquiry and quotations, the Doctor logs the assessment, and staff record the programme and payments, so the patient's history is complete from the first contact. Covers FR-20, FR-21, FR-22, FR-23, FR-24. The `enquiry` module owns `enquiries` and `quotations`, `assessment` owns `assessments`, `planning` owns `programmes`, `programme_events` and `payments` (AR8). Per the PRD role table: Coordinators and Admins write enquiries, quotations, programmes and payments and Doctors read them; only Doctors write assessments; Admins read everything (AR10). First contact stays on WhatsApp, email and phone; the app records the outcome and lineage (BR-01). Enquiries, quotations, programmes and payments are staff-only in the prototype; only shared assessment outcomes reach the patient. Known limit: an enquiry is logged against a created patient, so a lead with no email cannot be logged until onboarded (the BRD's lead list, FR-ENQ-04, is out of scope).
 
 ### Story 8.1: Log an enquiry
 
@@ -1834,50 +1928,38 @@ So that the first contact is recorded against the patient.
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `enquiries` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, date, channel (WhatsApp, email, phone or other), summary, treatment interest and who handled it, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient can never read an enquiry, and Staff of Clinic X cannot read Clinic Y's (FR-5, FR-4)
+**Then** an `enquiries` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, date, channel (WhatsApp, email, phone or other), summary, treatment interest and who handled it, with row-level security and pgTAP tests proving Coordinators and Admins write, Doctors read, a Patient reads nothing and Clinic X cannot read Clinic Y's (AR3, AR8, AR10, AR18, FR-4, FR-5)
 
-**Given** the patient record's Before arrival tab
+**Given** the Before arrival tab
 **When** Staff open it
-**Then** it shows an Enquiry section, with "Nothing logged yet." when empty (FR-20, UX-DR21)
-**And** Staff can add an enquiry with the date, channel, summary, treatment interest and handler, and the summary is required with the message "Add a short summary of the enquiry." (FR-20)
+**Then** an Enquiry section shows "Nothing logged yet." when empty, and Staff can add an enquiry with a required summary ("Add a short summary of the enquiry.") (FR-20, UX-DR21)
+**And** a returning patient's episode that starts at Assessment or Planning is not asked for an enquiry (FR-20, BR-04)
 
-**Given** a returning patient whose new episode starts at Assessment or Planning
-**When** the Before arrival tab opens
-**Then** no enquiry is required or prompted (FR-20, BR-04)
-
-**Given** an enquiry is saved on an episode in the Enquiry phase
+**Given** an enquiry saved on an episode in the Enquiry phase
 **When** the screen confirms
-**Then** it offers "Move to Assessment" which calls `move_phase` only if Staff confirm, and nothing moves otherwise (FR-10, AR14) `[ASSUMPTION: moves are offered, not automatic]`
-**And** the same screen works on a phone and a laptop (NFR2)
+**Then** it offers "Move to Assessment", which calls `move_phase` only if Staff confirm; nothing moves otherwise `[ASSUMPTION: moves are offered, not automatic]` (FR-10, AR14)
 
 ### Story 8.2: Log quotations
 
 As a coordinator,
-I want to log each quotation I sent, with its versions,
+I want to log each quotation I sent, with its versions and status,
 So that what was offered and accepted is on the record.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `quotations` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, a version, date sent, amount in minor units, currency, validity date and status (sent, accepted, revised or lapsed), with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** versions are unique and increasing within an episode, and a Patient cannot read a quotation (FR-21, FR-5)
+**Then** a `quotations` table exists, owned by the `enquiry` module, with `clinic_id`, the episode, a version, date sent, amount in minor units, currency, validity date and status (sent, accepted, revised or lapsed), with row-level security and pgTAP tests for the same roles as Story 8.1 (AR3, AR8, AR18)
+**And** `add_quotation(episode, …)` assigns the next version inside the database under a lock, so two staff adding at once get versions 2 and 3, never an error (FR-21, AR14)
 
 **Given** the Quotation section
 **When** Staff add a quotation
-**Then** the next version number is set automatically, and an amount that is not greater than zero is refused with "Enter an amount greater than zero." (FR-21)
-**And** a validity date not after the date sent is refused with a message that says why (FR-21)
+**Then** an amount not greater than zero is refused with "Enter an amount greater than zero.", a validity date not after the sent date is refused with a message, and amounts are stored in minor units and displayed with the currency's decimal places through `lib/money`, tested for a two-decimal and a zero-decimal currency (FR-21)
 
-**Given** a currency
-**When** an amount is saved and shown
-**Then** it is stored as an integer in minor units and displayed using that currency's number of decimal places through `lib/money` (AR11 conventions)
-**And** an amount typed with the wrong number of decimals is refused or rounded as the message states, tested for a two-decimal and a zero-decimal currency
-
-**Given** a quotation
-**When** Staff mark it accepted
-**Then** earlier versions of the same episode show as revised, and only one is accepted at a time (FR-21)
-**And** an existing document can optionally be linked to the quotation (FR-21, FR-18)
+**Given** quotation statuses
+**When** they change
+**Then** accepting one marks the episode's other quotations revised so only one is accepted; an accepted quotation can be un-accepted only with a confirmation that also unlinks it from any programme; and a quotation past its validity date shows as lapsed (FR-21, UX-DR26)
+**And** an existing document can optionally be linked to a quotation (FR-21, FR-18)
 
 ### Story 8.3: Log an assessment
 
@@ -1889,74 +1971,67 @@ So that the outcome is recorded wherever the assessment took place.
 
 **Given** the migrations
 **When** this story is applied
-**Then** an `assessments` table exists, owned by the `assessment` module, with `clinic_id`, the episode, date, method (in person, WhatsApp call, phone, video or email), the doctor, findings, outcome and `visibility` of `shared` or `staff_only`, with row-level security and pgTAP tests (AR3, AR8, AR10, AR18)
-**And** a Patient reads only `shared` assessments of their own episode, a Coordinator reads `shared` ones only, and only a Doctor writes (FR-22, FR-3, FR-5)
+**Then** an `assessments` table exists, owned by the `assessment` module, with `clinic_id`, the episode, date, method (in person, WhatsApp call, phone, video or email), the doctor, findings, outcome and `visibility` of `shared` or `staff_only`, with row-level security where only a Doctor writes, Admins read all, Coordinators read `shared` ones, and a Patient has no direct read on the table at all (AR3, AR8, AR10, FR-22)
 
 **Given** the Before arrival tab
 **When** a Doctor adds an assessment
-**Then** date, method, findings and outcome are required, the clinical content is free text because structured fields wait for the Doctor's input, and the visibility toggle defaults to Staff-only with the words stated (FR-22, UX-DR8) `[ASSUMPTION: one visibility setting for the whole assessment, as the PRD states]`
-**And** the app does not change how the assessment is done, so no scheduling or interpretation is offered (FR-22, BR-06)
+**Then** date, method, findings and outcome are required, the content is free text because structured fields wait for the Doctor's input, and the visibility toggle defaults to Staff-only with the choice in words; one setting covers the whole assessment (FR-22, UX-DR8)
+**And** the app does not change how the assessment is done, offering no scheduling or interpretation (FR-22, BR-06)
 
 **Given** an assessment marked Shared
-**When** the patient opens their record
-**Then** they see the date, method and outcome that the Doctor chose to share, and for a Staff-only assessment they see nothing (FR-5, FR-22)
+**When** the patient opens Plan
+**Then** the "From your doctor" section shows its date, method and outcome, read through `my_shared_assessments()`, a definer function with a stated reason that returns only those three fields of the caller's own Shared assessments and never the findings, proven by pgTAP that a patient can never obtain the findings (FR-22, FR-5, AR17)
 
-**Given** an assessment is saved on an episode in the Assessment phase
+**Given** an assessment saved on an episode in the Assessment phase
 **When** the screen confirms
-**Then** it offers "Move to Planning" which calls `move_phase` only if Staff confirm (FR-10, AR14)
+**Then** it offers "Move to Planning", which calls `move_phase` only if Staff confirm (FR-10, AR14)
 
 ### Story 8.4: Record the programme and cost
 
-As a coordinator or doctor,
-I want to record the programme and approximate cost agreed before travel,
-So that everyone knows what was settled and it can be refined on arrival.
+As a coordinator,
+I want to record the programme and approximate cost agreed before travel, and its refinement on arrival,
+So that everyone knows what was settled and how it changed.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `programmes` table exists, owned by the `planning` module, with `clinic_id`, the episode, programme name, duration in days, treatments, diet approach, approximate cost in minor units, currency, status (provisional, confirmed or refined on arrival) and the accepted quotation, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient cannot read a programme, and one programme is active per episode (FR-23, FR-5)
+**Then** `programmes` and `programme_events` tables exist, owned by the `planning` module, with `clinic_id`, the episode, programme name, duration in days, treatments, diet approach, approximate cost in minor units, currency, status (provisional, confirmed, refined on arrival) and an optional accepted quotation; one programme per episode; row-level security and pgTAP tests proving Coordinators and Admins write, Doctors read and a Patient reads nothing (AR3, AR8, AR10, AR18, FR-23)
 
 **Given** the Before arrival tab
 **When** Staff record a programme
-**Then** it can link only to an accepted quotation of the same episode, and a quotation from another episode is refused (FR-23, BR-05)
-**And** the status can be changed to refined on arrival by the Doctor after the patient arrives, with the change kept in history (FR-23, BR-05)
+**Then** a linked quotation must belong to the same episode and be accepted, otherwise the save is refused with a message; the approximate cost is labelled "Approximate" (FR-23, BR-05)
 
-**Given** an approximate cost
-**When** it is shown
-**Then** it is labelled "Approximate" and uses the currency's decimal places (FR-23)
+**Given** the Doctor refines the programme after the patient arrives
+**When** a Coordinator records the refinement on the Doctor's behalf, naming the Doctor
+**Then** `change_programme(programme, expected_version, changes, decided_by)` saves the new values and status "refined on arrival" and writes a `programme_events` row with the previous values, who entered it and which Doctor decided, in one transaction, and the change is allowed only once the episode has reached the Arrival phase (FR-23, BR-05, AR14)
 
-**Given** a programme is saved on an episode in the Planning phase
+**Given** a programme saved on an episode in the Planning phase
 **When** the screen confirms
-**Then** it offers "Move to Arrival" which calls `move_phase` only if Staff confirm (FR-10, AR14)
-**And** Staff of Clinic X cannot read Clinic Y's programmes, proven by pgTAP (FR-4)
+**Then** it offers "Move to Arrival", which calls `move_phase` only if Staff confirm (FR-10, AR14)
 
 ### Story 8.5: Record payments received
 
 As a coordinator,
-I want to record deposits and balances the clinic has received,
-So that the clinic's record of money received is in one place, without taking payments in the app.
+I want to record deposits, balances and refunds the clinic has received or paid back,
+So that the clinic's record of money is in one place, without taking payments in the app.
 
 **Acceptance Criteria:**
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `payments` table exists, owned by the `planning` module, with `clinic_id`, the episode, kind (deposit, balance or other), amount in minor units, currency, date received, method, who recorded it and a note, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** no card number or bank detail is ever stored, and a Patient cannot read a payment (FR-24, FR-5)
+**Then** a `payments` table exists, owned by the `planning` module, with `clinic_id`, the episode, kind (deposit, balance, refund or other), amount in minor units, currency, date, method, who recorded it and a note, with row-level security and pgTAP tests proving Coordinators and Admins write, Doctors read and a Patient reads nothing (AR3, AR8, AR10, AR18, FR-5)
+**And** no card number or bank detail is ever stored (FR-24)
 
 **Given** the Before arrival tab
 **When** Staff add a payment
-**Then** amount, currency and date are required with plain messages, and the list shows each payment and the total received per currency (FR-24)
-**And** when a programme exists in the same currency the section shows "Received 500.00 EUR of approximately 2,400.00 EUR", never mixing currencies (FR-24, FR-23)
+**Then** amount (greater than zero), currency and date are required with plain messages, a refund is shown as money paid back, and an idempotency key makes a double tap create one payment (FR-24, AR7)
+**And** the section shows totals per currency, and when a programme exists in the same currency, "Received 500.00 EUR of approximately 2,400.00 EUR", never mixing currencies (FR-24, FR-23)
 
 **Given** a payment recorded in error
-**When** Staff remove it
-**Then** a confirmation names the amount and date, the row is hidden with `deleted_at` and stays in history (UX-DR26)
-
-**Given** the app
-**When** any screen is reviewed
-**Then** there is no online payment, no payment link and no card form anywhere (FR-24, NFR1)
+**When** Staff remove it and confirm naming the amount and date
+**Then** it is hidden with `deleted_at` and stays in history (UX-DR26)
+**And** there is no online payment, payment link or card form anywhere (FR-24)
 
 ### Story 8.6: Walk the before-arrival journey
 
@@ -1968,22 +2043,17 @@ So that the record is proven complete and private.
 
 **Given** a clean demo database
 **When** the end-to-end test for the before-arrival part of UJ-6 runs
-**Then** a coordinator logs the WhatsApp enquiry and the first quotation, a doctor logs the assessment call and its outcome as Shared, the coordinator records the programme linked to the accepted quotation and the deposit, and each offered phase move is confirmed so the Overview history reads in order (UJ-6, FR-20 to FR-24, FR-10)
-**And** the patient signs in and sees only the Shared assessment and nothing else from this epic (FR-5)
+**Then** a coordinator logs the WhatsApp enquiry and two quotation versions, a doctor logs the assessment as Shared, the coordinator records the programme linked to the accepted quotation and a deposit, and each offered phase move is confirmed so the Overview history reads in order (UJ-6, FR-20 to FR-24, FR-10)
+**And** the patient signs in and sees the assessment's date, method and outcome under "From your doctor", but never its findings or anything else from this epic (FR-5)
 
 **Given** the run
 **When** it completes
-**Then** the isolation suite passes for every table added in this epic, including Patient A against Patient B and Clinic X against Clinic Y, and the coverage check finds no untested object (FR-4, FR-5, FR-6, AR18)
-**And** a written demo script is saved in `docs/demo/before-arrival.md` for Ravi to follow by hand
-
-**Given** the demo script
-**When** Ravi follows it on a phone and a laptop
-**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
-
+**Then** the isolation suite passes for every object added in this epic, including the `my_shared_assessments` function (FR-4, FR-5, FR-6, AR18)
+**And** a demo script is saved in `docs/demo/before-arrival.md`, followed by Ravi on a phone and a laptop with any failing step recorded as a defect (NFR2)
 
 ## Epic 9: Continuity
 
-After departure the clinic logs departure assistance and schedules follow-up check-ins, the patient answers them and can request an extra consultation, and consultations are logged. Covers FR-40, FR-41, FR-42, FR-43, FR-44. The `continuity` module owns `departure_assistance`, `follow_up_schedules`, `consultations` and `consultation_requests`; follow-up check-ins are rows in the `care` module's `check_ins` table created by `care`'s `create_due_check_in` (AR8, AR13). Check-ins are initiated by the clinic's schedule, never by the patient (BR-03).
+After departure the clinic logs departure assistance and schedules follow-up check-ins, the patient answers them and can request an extra consultation, and consultations are logged. Covers FR-40, FR-41, FR-42, FR-43, FR-44. The `continuity` module owns `departure_assistance`, `follow_up_schedules`, `consultations` and `consultation_requests`; follow-up check-ins are rows in `care`'s `check_ins`, created only by `create_due_check_in` and answered through `submit_check_in` (AR8, AR13). Check-ins are initiated by the clinic's schedule, never by the patient (BR-03). In Continuity, follow-up times are in the patient's own time zone, read at the moment each one is due.
 
 ### Story 9.1: Log departure assistance
 
@@ -1995,18 +2065,15 @@ So that the end of the visit is on the record.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `departure_assistance` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date, what was arranged and who arranged it, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient cannot read it and Staff of Clinic X cannot read Clinic Y's (FR-40, FR-5, FR-4)
+**Then** a `departure_assistance` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date, what was arranged and who arranged it, with row-level security and pgTAP tests proving Staff write, a Patient reads nothing and Clinic X cannot read Clinic Y's (AR3, AR8, AR18, FR-4, FR-5)
 
-**Given** the patient record's After tab
+**Given** the After tab
 **When** Staff add an entry
-**Then** the date and what was arranged are required with plain messages, and entries list newest first (FR-40, UX-DR21)
-**And** with none, the section says "Nothing logged yet." (UX-DR21)
+**Then** the date and what was arranged are required, entries list newest first, and the empty section says "Nothing logged yet." (FR-40, UX-DR21)
 
-**Given** a patient whose episode is in the Care phase
+**Given** an episode in the Care phase
 **When** departure assistance is saved
-**Then** the screen offers "Move to Continuity" which calls `move_phase` only if Staff confirm (FR-10, AR14)
-**And** the After tab works the same on a phone and a laptop (NFR2)
+**Then** the screen offers "Move to Continuity", which calls `move_phase` only if Staff confirm, and the After tab works the same on phone and laptop (FR-10, AR14, NFR2)
 
 ### Story 9.2: Schedule follow-up check-ins
 
@@ -2018,26 +2085,25 @@ So that the clinic, not the patient, decides when to ask.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `follow_up_schedules` table exists, owned by the `continuity` module, with `clinic_id`, the episode, start date, a list of dates or a repeat rule, the patient's time zone and a status, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** only Staff write schedules and a Patient cannot read or write one (FR-41, BR-03, FR-5)
+**Then** a `follow_up_schedules` table exists, owned by the `continuity` module, with `clinic_id`, the episode, a list of dates or a repeat rule, a local time of day, status (active or cancelled) and a version, at most one active schedule per episode, with row-level security and pgTAP tests where only Staff write and a Patient reads nothing (AR3, AR8, AR18, FR-41, BR-03)
 
 **Given** the After tab
-**When** Staff create a schedule
-**Then** they can pick a list of dates or "every N days for M check-ins", at a local time of day for the patient, with a preview of the dates in the patient's time zone and in the clinic's (FR-41, FR-47)
-**And** follow-up templates from the Doctor are not offered yet, because they wait on the Doctor's input `[ASSUMPTION: free scheduling only until templates are provided]` (FR-41)
+**When** Staff create or edit a schedule
+**Then** they pick future dates or "every N days for M check-ins" (N at least 1, M from 1 to 26) at a local time of day, with a preview of the dates in the patient's zone and the clinic's; past dates, zero or too many are refused with a message `[ASSUMPTION: at most 26]` (FR-41, FR-47)
+**And** follow-up templates from the Doctor are not offered yet, because they wait on the Doctor's input (FR-41)
 
-**Given** a confirmed schedule
-**When** the hourly database job runs
-**Then** it calls `care`'s `create_due_check_in` for each date now due, which creates exactly one follow-up check-in per episode and date and raises the patient notification "Your follow-up check-in is ready." with no health content (FR-41, AR12, AR13)
-**And** running the job twice in the same window creates nothing new, proven by a test (FR-41, NFR7)
+**Given** an active schedule on an episode in Continuity
+**When** the hourly job runs
+**Then** for each date now due it calls `create_due_check_in` with the follow-up template, computing the due time in the patient's current time zone (read from the patient record at that moment, including across daylight-saving changes), creating exactly one check-in per episode and date, and raising "Your follow-up check-in is ready." with no health content (FR-41, AR11, AR12, AR13)
+**And** running the job twice creates nothing new, and the job creates nothing for an episode that is closed or not in Continuity (NFR7, FR-10)
 
-**Given** a patient in a different time zone
-**When** a check-in becomes due
-**Then** its local date and time are computed in the patient's zone and stored in UTC, including across a daylight-saving change (FR-41, AR11)
+**Given** an earlier follow-up still unanswered
+**When** the next one is created
+**Then** the earlier one becomes "not answered" and appears that way in the Review Queue (FR-41, FR-37)
 
-**Given** a schedule
-**When** Staff cancel it
-**Then** a confirmation names the schedule, and check-ins not yet created are not created, while those already answered are kept (UX-DR26)
+**Given** Staff cancel a schedule
+**When** they confirm naming it
+**Then** no further check-ins are created and created but unanswered ones are withdrawn, while answered ones are kept (UX-DR26)
 
 ### Story 9.3: The patient answers a follow-up check-in
 
@@ -2047,24 +2113,21 @@ So that my doctor still knows how I am doing.
 
 **Acceptance Criteria:**
 
-**Given** a follow-up check-in is due for the patient
-**When** they open the link in the notification and sign in, or open Check-in
-**Then** the same one-question-per-screen flow as the daily check-in runs, using the clinic's follow-up questions from settings (default: the same five), ending with a review screen and Send (FR-42, UX-DR18)
-**And** the patient can report how they feel, confirm medicines taken and flag a diet issue in free text (FR-42)
+**Given** a follow-up check-in is open
+**When** the patient follows the link in the notification email, signing in first if needed, or opens Check-in
+**Then** they land on that check-in, which runs the same one-question-per-screen flow as the daily check-in using the clinic's follow-up questions (how they feel, medicines taken, diet issues, from Story 1.5's seed or the Doctor's edits in Story 6.5), with a review screen and Send (FR-42, UX-DR18)
 
 **Given** the patient sends the answers
-**When** they are saved
-**Then** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and the emergency line, and the check-in enters the Doctor's Review Queue like any other (FR-42, FR-37, UX-DR22)
-**And** the flag function from Story 6.2 evaluates it with the clinic's rules, and the patient is never shown a flag (FR-38, BR-06)
+**When** `submit_check_in` records them
+**Then** the screen says "Received. Your doctor reviews check-ins each day." with the clinic phone and the emergency line, the check-in enters the Review Queue, and the flag function evaluates it with the clinic's rules, never showing a flag to the patient (FR-42, FR-37, FR-38, UX-DR22, BR-06)
 
-**Given** no follow-up is due
+**Given** no follow-up is open
 **When** the patient opens Check-in
 **Then** they see the next scheduled date in their local time and no way to start one themselves (BR-03, UX-DR21)
 
 **Given** a patient whose sign-in link has expired
-**When** they request a new one from the sign-in screen
-**Then** they can sign in as in Story 3.6, so a patient who left months ago can still answer (FR-2)
-**And** Patient A cannot read or answer Patient B's follow-up, proven by pgTAP and an end-to-end test (FR-5, AR18)
+**When** they request a new one
+**Then** they can sign in as in Story 3.8, so a patient who left months ago can still answer, and Patient A cannot read or answer Patient B's follow-up, proven by pgTAP and an end-to-end test (FR-2, FR-5, AR18)
 
 ### Story 9.4: Log consultations
 
@@ -2076,17 +2139,11 @@ So that care that happened outside the app is still on the record.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `consultations` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date and time, channel (WhatsApp call, WhatsApp video, phone, video or other), the doctor and a summary, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient cannot read it and Staff of Clinic X cannot read Clinic Y's (FR-43, FR-5, FR-4)
+**Then** a `consultations` table exists, owned by the `continuity` module, with `clinic_id`, the episode, date and time, channel (WhatsApp call, WhatsApp video, phone, video or other), the doctor who gave it, a summary and an optional link to a consultation request (left empty here and used by the next story), with row-level security and pgTAP tests proving Staff write, a Patient reads nothing and Clinic X cannot read Clinic Y's (AR3, AR8, AR18, FR-4, FR-5)
 
 **Given** the After tab
 **When** a Doctor or Coordinator logs a consultation
-**Then** the date, channel and summary are required with plain messages, and it appears in the episode history in date order (FR-43)
-**And** a consultation has an optional link field to a consultation request, left empty here and filled by the next story (FR-43, FR-44)
-
-**Given** a Coordinator
-**When** they log a consultation
-**Then** they can, and the Doctor field names the doctor who gave it, because the app never records a consultation as given by someone who did not give it (FR-43)
+**Then** date, channel, the doctor who gave it and a summary are required, and it appears in the episode history in date order (FR-43)
 
 ### Story 9.5: The patient requests an extra consultation
 
@@ -2098,49 +2155,44 @@ So that I can get help without searching for the right WhatsApp chat.
 
 **Given** the migrations
 **When** this story is applied
-**Then** a `consultation_requests` table exists, owned by the `continuity` module, with `clinic_id`, the episode, requested time, preferred window with the patient's zone, reason, a status (requested, approved, declined or done), who handled it and an optional link to the logged consultation, with row-level security and pgTAP tests (AR3, AR8, AR18)
-**And** a Patient can create and read only their own requests and cannot change a status (FR-44, FR-5)
+**Then** a `consultation_requests` table exists, owned by the `continuity` module, with `clinic_id`, the episode, requested time, preferred window with the patient's zone, reason, status (requested, approved, declined, cancelled or done), confirmed time, who handled it and the linked consultation, with row-level security and pgTAP tests (AR3, AR8, AR18)
+**And** patients create requests only through `request_consultation(window, reason)`, which uses the caller's open episode and always sets status requested with no handler, and cancel only through `cancel_my_request(request)`; they have no direct insert or update, proven by pgTAP (FR-44, FR-5, AR14)
 
 **Given** the patient's Home or Plan
 **When** they tap Request a consultation
-**Then** they choose a preferred day and time window, give a reason of up to 1,000 characters and send it, and the request shows "Waiting for the clinic" (FR-44, UX-DR22)
-**And** the screen states it is not for emergencies and shows the clinic phone and the emergency line (UX-DR22, BR-06)
+**Then** they choose a preferred day and time window, give a reason of up to 1,000 characters and send it, the request shows "Waiting for the clinic", and the screen states it is not for emergencies with the clinic phone and the emergency line (FR-44, UX-DR22, BR-06)
+**And** the endpoint is rate limited (AR21)
 
 **Given** a new request
 **When** it is saved
-**Then** an alert is raised for the coordinators through `app.emit_event` with a `dedupe_key` and appears in the needs-attention block with the patient name and time (FR-9, FR-44, AR12)
-**And** the endpoint is rate limited (AR21)
+**Then** a trigger raises a Coordinator alert keyed to that request, so every request raises its own alert, shown on Today with the patient name and time (FR-9, FR-44, AR12)
 
 **Given** Staff open the request
-**When** they approve it with a confirmed time or decline it with a short reason
-**Then** the status changes, the alert resolves, and the patient is notified with no health content, seeing "Approved for Thursday 19 Nov, 16:00 your time" or "Declined: <reason>" (FR-44, UX-DR20)
+**When** they approve it with a confirmed time, entered in the patient's time zone with the clinic time shown, or decline it with a short reason
+**Then** the change goes through `decide_request(request, expected_status, decision)`, so a second decision on a request already decided is refused with `conflict`, the alert resolves, and the patient is notified with no health content and sees "Approved for Thursday 19 Nov, 16:00 your time" or "Declined: <reason>" (FR-44, UX-DR20, AR7)
 
 **Given** the consultation takes place
 **When** Staff log it
-**Then** the request can be marked done and linked to the consultation, and the patient sees "Done" (FR-43, FR-44)
-**And** a patient sees only their own requests and their statuses, proven by pgTAP (FR-5)
+**Then** the request is marked done and linked to the consultation, the patient sees "Done", and a patient sees only their own requests (FR-43, FR-44, FR-5)
 
-### Story 9.6: Walk the follow-up journey and finish the After tab
+### Story 9.6: Walk the follow-up journey and the whole product
 
 As a product owner,
-I want to walk Anna's follow-up from the scheduled check-in to the logged consultation in one repeatable run,
-So that the journey from enquiry to follow-up is proven end to end.
+I want to walk Anna's follow-up from the scheduled check-in to the logged consultation, and then the whole journey from enquiry to follow-up,
+So that the prototype's acceptance criteria are proven end to end.
 
 **Acceptance Criteria:**
 
 **Given** a clean demo database
-**When** the end-to-end test for UJ-4 runs
-**Then** a coordinator schedules a follow-up, the hourly job creates the check-in, the patient signs in by emailed link, answers and sends it, requests an extra consultation, the coordinator approves it, and after the call the consultation is logged and the request marked done (UJ-4, FR-40 to FR-44)
-**And** the same run covers a patient in a different time zone and the case where the sign-in link has expired and a new one is requested (UJ-4, FR-2)
+**When** the end-to-end test for UJ-4 runs, with the hourly job and sender run on demand
+**Then** a coordinator schedules a follow-up, the job opens the check-in, the patient follows the email link, signs in, answers and sends, requests an extra consultation, the coordinator approves it, and after the call the consultation is logged and the request marked done (UJ-4, FR-40 to FR-44)
+**And** the same run covers a patient in a different time zone across a daylight-saving change, and an expired sign-in link replaced by a new one (UJ-4, FR-2, FR-47)
 
 **Given** the run
 **When** it completes
-**Then** the isolation suite passes for every table added in this epic, and the whole-product suite passes across all nine epics, including Patient A against Patient B and Clinic X against Clinic Y, with no object lacking a test (FR-4, FR-5, FR-6, AR18)
-**And** the After tab shows departure assistance, the follow-up schedule, consultations and requests together, working on phone and laptop (NFR2)
+**Then** the isolation suite passes across all nine epics with no object lacking a test, the automated accessibility check passes on every patient route, and the end-to-end suite runs in Chromium, Firefox and WebKit (FR-4, FR-5, FR-6, AR18, NFR8, BRD NFR-12)
 
-**Given** the full demo
-**When** Ravi follows the combined demo script saved in `docs/demo/full-journey.md` from enquiry to follow-up
-**Then** every step works as written, and any step that does not is recorded as a defect (NFR2)
-**And** the prototype acceptance criteria are checked: the full demo journey works end to end, and isolation is proven by tests (brief, SM-1, SM-2)
+**Given** the combined demo script in `docs/demo/full-journey.md`
+**When** Ravi follows it on a phone and a laptop from enquiry to follow-up
+**Then** every step works as written, any step that does not is recorded as a defect, and the prototype's acceptance is checked: the full demo journey works end to end and isolation is proven by tests (brief, SM-1, SM-2)
 
-<!-- END OF EPICS -->

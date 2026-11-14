@@ -135,6 +135,7 @@ flowchart TD
 - **Prevents:** many modules inventing notification shapes; duplicate sends; Patients without a valid recipient
 - **Rule:**
   - All notification and alert writes go through `app.emit_event(type, recipient_user_id, subject, dedupe_key, payload)` with a closed event enum. The recipient is always an auth user id, for Patients and Staff alike; role-wide events fan out to one row per user.
+  - `app.emit_event` is a definer function in a private schema that no client role can execute; events are raised only by database triggers and named SQL functions. Uniqueness is per `(dedupe_key, recipient)`; a mode updates an unresolved alert instead of ignoring a repeat. Urgent types are sent at once through `pg_net`; the hourly sweep only retries. The raw invite token and code never enter the outbox.
   - Alerts (FR-9) are rows in `alerts` with resolve semantics, owned by `notifications`. "I have landed" and "I need help" are `arrival_events` rows owned by `arrival`, which emit an event.
   - `pg_cron` runs hourly, creates due Check-ins and notifications through idempotent functions, and calls the sender route through `pg_net` with a signed header. The sender delivers by channel (in-app, email) and retries up to three attempts, recording status.
   - Email bodies carry no health content, only a prompt to open the app.
@@ -143,7 +144,7 @@ flowchart TD
 
 - **Binds:** FR-36, FR-37, FR-38, FR-39, FR-41, FR-42
 - **Prevents:** Care and Continuity building two Check-in tables or clashing keys
-- **Rule:** `check_ins` is owned by `care`, with `kind` (`daily` or `follow_up`), `template_id`, `local_date`, `answers jsonb`, `flags`, `reviewed_by`, `reviewed_at`. The unique key is `(episode_id, kind, template_id, local_date)`. `continuity` owns only `follow_up_schedules` and creates due follow-up Check-ins by calling `care`'s `create_due_check_in`. Flags are written only by the flag-evaluation function (AD-7). Both Check-in kinds enter the one Review Queue.
+- **Rule:** `check_ins` is owned by `care`, with `kind` (`daily` or `follow_up`), `template_id`, `local_date`, `answers jsonb`, `reviewed_by`, `reviewed_at` (flags live in the staff-only table `check_in_flags`, because row-level security cannot hide a column from patients). The unique key is `(episode_id, kind, template_id, local_date)`. `continuity` owns only `follow_up_schedules` and creates due follow-up Check-ins by calling `care`'s `create_due_check_in`. Flags are written only by the flag-evaluation function (AD-7). Both Check-in kinds enter the one Review Queue. Rows are created only by the scheduler; patients answer only through `submit_check_in`, never by direct write; `template_id` names the template (daily or follow-up) and the questions version is a separate column.
 
 ### AD-12 — Multi-table changes are single SQL functions
 
@@ -159,14 +160,14 @@ flowchart TD
   - Documents attach only to a saved patient; onboarding drafts hold no files, so there is nothing to clean up when a draft is abandoned.
   - Private buckets only. Path is `<clinic_id>/<patient_id>/<episode_id or general>/<document_id>.<ext>`. Storage policies join to `documents` to enforce clinic, Patient and `visibility`; a path prefix alone is not enough.
   - Buckets set size and allowed MIME types, upsert is disallowed, and the server re-checks file content type. Files are served with `nosniff` and attachment disposition.
-  - Download links are generated per click and expire in about 60 seconds. Uploads use short-lived signed URLs.
+  - Download links are generated per click and expire in about 60 seconds. An upload first creates a pending `documents` row through a SQL function; the storage insert policy allows a file only at that pending row's path, using the uploader's own session, never the service key; a server check confirms the content type, and a job removes pending rows older than 30 minutes.
   - HEIC is converted to JPEG in the browser before upload; only PDF, JPG and PNG up to 15 MB reach storage.
 
 ### AD-14 — Invites and one-time links cannot grant access by themselves
 
 - **Binds:** FR-2, FR-19
 - **Prevents:** privilege escalation through an invite; links consumed by mail scanners; account enumeration
-- **Rule:** public sign-up is disabled, and the token hook gives no role by default. An invite is a row in `invites` with a hashed token, bound to an email, a clinic, a role and a Patient; role, clinic and Patient come only from that row, never from the URL or user metadata. The link opens a page where the user presses a button to redeem it (a POST), or the user types the code, so a mail scanner's GET does not consume it. Invites and codes expire quickly, requests return the same response for known and unknown emails, and resend has a cooldown and rate limit. Redirect URLs are an explicit allowlist. Claims are read from `app_metadata` only.
+- **Rule:** public sign-up is disabled, and the token hook gives no role by default. An invite is a row in `invites` with a hashed token, bound to an email, a clinic, a role and a Patient; role, clinic and Patient come only from that row, never from the URL or user metadata. The link opens a page where the user presses a button to redeem it (a POST), or the user types the code, so a mail scanner's GET does not consume it. Invites and codes expire quickly, requests return the same response for known and unknown emails, and resend has a cooldown and rate limit. Redirect URLs are an explicit allowlist. Claims are read from `app_metadata` only. The patient's sign-in account is created only when the invite is redeemed, so an unredeemed invite grants nothing; Staff can revoke an invite and disable a patient account.
 
 ### AD-15 — Definer functions are exceptions with rules
 
@@ -203,6 +204,12 @@ flowchart TD
 - **Binds:** all
 - **Prevents:** the deferred audit log needing a rewrite
 - **Rule:** because writes go through server actions (AD-5) and SQL functions (AD-12) and rows carry `created_by` and `updated_at`, an audit trail can be added centrally later. The prototype does not ship the audit log or staff MFA; both are a hard gate before real patient data.
+
+### AD-21 — Patients write only through named SQL functions
+
+- **Binds:** FR-25, FR-29, FR-35, FR-36, FR-42, FR-44, FR-17
+- **Prevents:** a patient changing fields they should not (flags, statuses, paths, episode) through the database API
+- **Rule:** patients have no direct insert, update or delete on any table. Each patient action is a named SQL function that takes the episode from the caller's token and open episode, fixes every server-set field and checks the episode's phase (for example `set_own_flight`, `record_arrival_event`, `record_intake`, `submit_check_in`, `request_consultation`, `remove_own_document`). A patient view that must omit a column is a definer function returning only the allowed fields (for example `my_shared_assessments`).
 
 ## Consistency Conventions
 

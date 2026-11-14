@@ -30,3 +30,9 @@ Foundation, then Arrival and Care, then Enquiry, Assessment and Planning, then C
 
 ## Tenancy decision (architecture, 2026-10-24, owner)
 Deployment per clinic: one Supabase project and one Vercel deployment per clinic, same codebase. Tables still carry `clinic_id` and every policy checks it. FR-4, FR-6 and FR-48 stand: the isolation suite seeds two Clinic rows in one database and proves the policies, which keeps pooling clinics later possible.
+
+## Decisions from the independent epics review (owner, 2026-11-14)
+- Programme: the Doctor has read-only access, per the PRD role table; a refinement decided by the Doctor on arrival is entered by a Coordinator on the Doctor's behalf, naming the Doctor (BR-05 satisfied in substance).
+- Admin reads all clinical records, including Staff-only notes and assessments, per the PRD role table.
+- Patient invite link and code are valid for 7 days; ordinary sign-in links and codes stay at one hour.
+- Patients read shared notes, shared assessment outcomes and medicine changes in a "From your doctor" section on Plan.

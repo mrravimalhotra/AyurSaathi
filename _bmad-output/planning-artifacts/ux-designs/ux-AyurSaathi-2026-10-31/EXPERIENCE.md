@@ -33,7 +33,7 @@ A responsive web app, installable to the phone home screen, with three areas in 
 |---|---|---|---|
 | Home | Bar, app open | Journey bar; "today" card; arrival-day card; Updates; request a consultation | FR-12, 28, 25, 29, 44, 45 |
 | Arrival details | Home arrival-day card | Flight (editable), pickup, stay; "I have landed", "I need help" | FR-25–29 |
-| Plan | Bar | Day view: schedule, meals, medicines with Taken toggles; date switcher; current medicines, "Show earlier medicines" | FR-35, 32 |
+| Plan | Bar | Day view: schedule, meals, medicines with Taken toggles; date switcher; current medicines, "Show earlier medicines"; a "From your doctor" section with shared notes, shared assessment outcomes and medicine changes | FR-35, 32, 31, 22 |
 | Documents | Bar | Documents shared with the patient; upload | FR-17, 18 |
 | Check-in | Bar | Today's check-in, or the next follow-up | FR-36, 42 |
 | Request a consultation | Home, Plan | Preferred time and reason; status of past requests | FR-44 |
@@ -57,7 +57,7 @@ A responsive web app, installable to the phone home screen, with three areas in 
 | Day Plan builder | Care tab, Today | Pick a date, copy yesterday, edit items, publish | FR-33, 34 |
 | Review Queue | Bar (Doctor) | Check-ins, flagged first; review a check-in | FR-37–39 |
 | Settings: Clinic | More, Settings | Branding and terminology (Admin) | FR-8 |
-| Settings: Clinical rules | More, Settings | Check-in questions and Flag Rules, labelled "Sample" (Doctor) | FR-8, 36, 38 |
+| Settings: Clinical rules | More, Settings | Daily and follow-up check-in questions and Flag Rules, labelled "Sample" (Doctor edits; Coordinator reads) | FR-8, 36, 38, 42 |
 | Settings: People | More, Settings | Staff users and roles (Admin) | FR-3 |
 
 → Composition references (spines win on conflict): `mockups/key-patient-home-arrival.html`, `mockups/key-patient-checkin.html`, `mockups/key-clinic-today-laptop.html`, `mockups/key-doctor-review-phone.html`.
@@ -104,7 +104,7 @@ Behavioral rules. Visual specs live in `DESIGN.md.Components`.
 | Check-in flow | Patient Check-in | One question per screen, "Question 2 of 5", large answer buttons, Back at every step, Review screen before Send. Medicines answer: Yes, Partly, No. Score answers 1 to 5 with word anchors ("Poor" to "Very good"). Free text up to 1,000 characters with a counter. |
 | Review Queue | Doctor | List sorted Flagged first, then time. A Flagged row states the rule in words ("Medicines: No"). The review pane shows answers, the patient's recent notes and medicines, and actions: Add note (Shared or Staff-only), Change medicine, Mark reviewed. |
 | Alert and notification inbox | Today, Home | Newest first. Unread are marked "New" in text. Read state is stored. |
-| Time display | Everywhere | "Thu 12 Nov, 14:35 IST", and "(Pune 17:05)" in brackets when the viewer's zone differs. |
+| Time display | Everywhere | "Thu 12 Nov, 14:35 CET (Pune 19:05)": the bracketed city and zone come from Clinic Settings and show when the viewer's zone differs. Flight arrival times show in the arrival airport's local time. |
 | Demo ribbon | Every screen | Fixed at top. Not interactive. |
 
 ## State Patterns
