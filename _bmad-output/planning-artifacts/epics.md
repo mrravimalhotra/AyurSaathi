@@ -1558,4 +1558,174 @@ So that the whole care loop is proven working.
 **When** Ravi follows it on a phone and a laptop
 **Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (NFR2)
 
+## Epic 7: Documents
+
+Staff and patients add and view documents safely, with passport scans and medical records stored privately, shared or staff-only, and phone photos accepted. Covers FR-17 and FR-18. The `documents` module owns `documents`; documents attach only to a saved patient, never to an onboarding draft (AR8, AR15). Stories use the findings recorded in `docs/spikes/` by Story 1.11 for the HEIC approach and the oldest phone tested.
+
+### Story 7.1: Staff upload a document to a patient record
+
+As a coordinator or doctor,
+I want to upload a document to a patient's record and choose whether the patient can see it,
+So that the patient's files are in one place and the private ones stay private.
+
+**Acceptance Criteria:**
+
+**Given** the migrations
+**When** this story is applied
+**Then** a `documents` table exists, owned by the `documents` module, with `clinic_id`, the patient, an optional episode, kind (passport, medical record, letter, prescription, summary or other), storage path, file type, size, who uploaded, `visibility` of `shared` or `staff_only`, and `deleted_at`, with row-level security (AR3, AR8, AR10)
+**And** a private storage bucket exists with a bucket-level size limit of 15 MB, allowed types PDF, JPG and PNG, and overwrite disallowed (AR15, FR-17)
+**And** pgTAP tests prove the table and the bucket each as Patient A, Patient B, Staff of Clinic X and Staff of Clinic Y, and the coverage check passes (FR-4, FR-5, AR18)
+
+**Given** a saved patient's Documents tab
+**When** Staff choose Add document
+**Then** a file chooser shows the limits first ("PDF, JPG, PNG or HEIC, up to 15 MB"), a kind can be chosen, and the visibility toggle defaults to Staff-only with the words "Staff-only. The patient cannot see this." (FR-17, UX-DR8, UX-DR15)
+**And** the file goes straight to storage with a short-lived signed upload link and the `documents` row is created only after the upload succeeds (AR15)
+
+**Given** a file over 15 MB or of another type
+**When** it is chosen or sent
+**Then** it is refused with "This file is larger than 15 MB. Choose a smaller file or compress it." or "Upload a PDF, JPG, PNG or HEIC file." and the input is kept (FR-17, UX-DR15, UX-DR21)
+
+**Given** a file that passes the browser check
+**When** the server inspects its content type after upload
+**Then** a file whose content does not match its type is deleted and the user sees the upload-rejected message, because browser-only limits can be bypassed (AR15)
+
+**Given** repeated uploads in a short time
+**When** the limit is exceeded
+**Then** the upload endpoint answers with the `rate_limited` result and says when to try again (AR21)
+**And** the Documents tab lists each file with name, kind, size, who added it and a Shared or Staff-only badge, with the lock marker and the words on Staff-only ones (FR-18, UX-DR7, UX-DR8)
+
+### Story 7.2: Open a document through a short-lived link
+
+As a coordinator, doctor or patient,
+I want to open a document I am allowed to see,
+So that I can read it without the file being open to anyone else.
+
+**Acceptance Criteria:**
+
+**Given** a document the signed-in person is allowed to see
+**When** they tap its name
+**Then** a download link is created at that moment, it works within about 60 seconds, and after that it stops working (AR15)
+**And** the file is served with `nosniff` and as an attachment, so the browser does not run it (AR15)
+
+**Given** a Patient
+**When** they request a `staff_only` document, another patient's document, or a document of another clinic
+**Then** no link is created and nothing about the file is revealed (FR-5, FR-4, AR15)
+
+**Given** the storage policies
+**When** they are evaluated
+**Then** they join to `documents` to enforce the clinic, the patient and the visibility, and a path prefix alone grants nothing (AR15)
+**And** a pgTAP test proves a user who guesses another patient's file path cannot read it (AR18)
+
+**Given** a user whose role was removed
+**When** they use an old token to request a link
+**Then** no link is created, proven by a test (AR5, AR18)
+
+**Given** a link older than 60 seconds
+**When** it is opened
+**Then** it is refused and the user can request a new one from the same screen (AR15, UX-DR21)
+
+### Story 7.3: Upload photos from a phone, including HEIC
+
+As a coordinator or patient,
+I want to take a photo of a passport or record with my phone and upload it,
+So that I do not need a scanner.
+
+**Acceptance Criteria:**
+
+**Given** a phone browser
+**When** the user chooses Take a photo or Choose a file
+**Then** the camera or the photo library opens and the chosen image is uploaded (FR-17, UX-DR15)
+
+**Given** an iPhone photo in HEIC format
+**When** it is chosen
+**Then** the browser converts it to JPEG before upload with the line "Preparing photo…" visible, using the approach recorded in `docs/spikes/` by Story 1.11, and only the JPEG reaches storage (AR15, UX-DR15)
+**And** the same file's size after conversion is checked against 15 MB, with the message "This file is larger than 15 MB. Choose a smaller file or compress it." if it is still too large (FR-17)
+
+**Given** a conversion that fails or takes too long
+**When** the browser cannot convert the file
+**Then** the user sees "We could not prepare this photo. Try taking it again, or choose a PDF." and nothing is uploaded (UX-DR21)
+
+**Given** the oldest phone recorded in `docs/spikes/`
+**When** the upload is tried on it
+**Then** it completes within the time the findings note states, or the note's recorded fallback is used (AR15)
+
+**Given** an upload in progress
+**When** the user watches it
+**Then** progress shows in words and a Cancel button stops it and leaves no row and no file (UX-DR15)
+
+### Story 7.4: The patient's Documents tab
+
+As a patient,
+I want to see the documents my clinic has shared with me and add my own,
+So that my records are in one place and the clinic has what it needs.
+
+**Acceptance Criteria:**
+
+**Given** a signed-in patient
+**When** they open Documents
+**Then** they see only documents marked Shared for their own record, each with name, kind and date, and never a Staff-only document or another patient's (FR-18, FR-5)
+**And** with none, the screen says "No documents yet. Your clinic will add documents here. You can add your own." (UX-DR21)
+
+**Given** the patient taps Add a document
+**When** they choose a file or take a photo
+**Then** the upload works as in Stories 7.1 and 7.3 with 56px targets and 18px text, and the document is saved as Shared so the patient can see what they added (FR-17, UX-DR2)
+**And** Staff see the patient's upload in their Documents tab with the label "Added by patient" (FR-17, FR-18)
+
+**Given** a document a patient added
+**When** the patient removes it
+**Then** a confirmation names the file, and after confirming it is hidden from both and kept for the clinic's retention until the owner decides rules, not erased (UX-DR26, FR-17)
+**And** a patient cannot remove a document Staff added (FR-5)
+
+**Given** the patient's Documents on a phone and a laptop
+**When** it is used at 200% zoom and 320px width
+**Then** no label is truncated and the tab works by touch and keyboard (UX-DR23)
+
+### Story 7.5: Manage documents and add them from onboarding
+
+As a coordinator,
+I want to change who can see a document, remove one that was added by mistake, and add documents right after creating a patient,
+So that the record is correct and complete without extra steps.
+
+**Acceptance Criteria:**
+
+**Given** a document in the Documents tab
+**When** Staff change its visibility
+**Then** the toggle states the new setting in words and the patient's view updates, and a Staff-only to Shared change confirms first by naming the file (FR-18, UX-DR8, UX-DR26)
+
+**Given** a document added by mistake
+**When** Staff press Remove
+**Then** a confirmation names the file, and after confirming the document is hidden from every list and its file link stops working, with the row kept with `deleted_at` set (FR-17, UX-DR15)
+**And** Patient policies exclude removed documents (AR10)
+
+**Given** the onboarding success screen
+**When** a patient has just been created
+**Then** the "Add documents now" card, which Story 3.5 left showing "Documents come next", is now active and opens the new patient's Documents tab ready to add a passport or medical records (UX-DR14, FR-17)
+**And** an onboarding draft that is abandoned holds no files and needs no cleanup, because documents attach only to a saved patient (AR15)
+
+**Given** a returning patient with documents from an earlier episode
+**When** a new episode is started
+**Then** the earlier documents are still in the Documents tab and need no re-upload (FR-11, FR-18)
+
+### Story 7.6: Walk the documents journey
+
+As Ravi, the owner,
+I want to walk adding a passport photo and sharing a record in one repeatable run,
+So that documents are proven safe, not assumed.
+
+**Acceptance Criteria:**
+
+**Given** a clean demo database
+**When** the end-to-end test runs
+**Then** a coordinator creates a patient on a phone-sized browser, adds a passport photo from the success card as Staff-only, adds a medical record as Shared, and the patient signs in and sees only the Shared one and can open it, while a link to the Staff-only one is refused (UJ-2, FR-17, FR-18)
+**And** the patient adds their own document and Staff see it labelled "Added by patient"
+
+**Given** the run
+**When** it completes
+**Then** the isolation suite passes for the `documents` table and its bucket, covering Patient A against Patient B, Clinic X against Clinic Y, Staff-only against a Patient, a guessed path and a demoted user's old token (FR-4, FR-5, FR-6, AR18)
+**And** a written demo script for documents is saved in `docs/demo/documents.md` for Ravi to follow by hand
+
+**Given** the demo script
+**When** Ravi follows it with a real iPhone photo and an Android photo
+**Then** every step works as written, and any step that does not is recorded as a defect before the next epic starts (FR-17, NFR2)
+
 <!-- NEXT EPIC -->
