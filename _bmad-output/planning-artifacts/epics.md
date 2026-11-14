@@ -1,5 +1,5 @@
 ---
-status: final
+status: draft
 stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation']
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-AyurSaathi-2026-10-22/prd.md
